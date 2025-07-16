@@ -1,0 +1,10 @@
+package com.example.future_sur_taux.domain.enumeration;
+
+public enum BondClassification {
+  LISTED_GOVERNMENT_BONDS,
+  LISTED_PRIVATE_BONDS,
+  UNLISTED_GOVERNMENT_BONDS,
+  UNLISTED_PRIVATE_BONDS,
+  CDN,
+  COLLECTIVE_INVESTMENT_SCHEMES_IN_SECURITIZATION
+}
