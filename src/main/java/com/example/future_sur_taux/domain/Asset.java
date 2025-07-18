@@ -19,5 +19,9 @@ public class Asset {
     private String name;
 
     private String symbol;
+    private String description;
+    private String isin;  // Champ Asset
+
+
 
 }

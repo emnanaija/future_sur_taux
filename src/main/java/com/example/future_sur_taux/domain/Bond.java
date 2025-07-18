@@ -21,10 +21,10 @@ import java.time.LocalDate;
 @EqualsAndHashCode(callSuper = false)
 public class Bond  extends Asset{
 
-
+/*
     @Id
     private Long id;
-
+*/
     @Column(name = "indexed")
     private Boolean indexed;
 

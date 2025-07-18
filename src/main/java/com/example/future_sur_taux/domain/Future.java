@@ -27,15 +27,15 @@ import java.time.LocalDate;
 public class Future extends Asset  {
 
 
-    @Id
+   /* @Id
     private Long id;
-
+*/
     private String symbol;
     private Boolean instrumentStatus;
-    private String loadId;
+   private String loadId;
     private String fullName;
     private String tradingParameter;
-    private LocalDate lastTradingDate;
+    private LocalDate lastTraadingDate;
     private String segment;
     private String calendarId;
     private Boolean flagForDelete;

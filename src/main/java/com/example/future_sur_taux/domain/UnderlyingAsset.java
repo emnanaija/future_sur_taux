@@ -24,9 +24,9 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 @EqualsAndHashCode(callSuper = false)
 public class UnderlyingAsset extends Underlying {
 
-    @Id
+   /* @Id
     private Long id;
-
+*/
     @OneToOne
     private Asset asset;
 }
