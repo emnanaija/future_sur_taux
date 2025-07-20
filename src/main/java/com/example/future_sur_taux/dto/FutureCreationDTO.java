@@ -1,8 +1,10 @@
 package com.example.future_sur_taux.dto;
+
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import com.example.future_sur_taux.domain.enumeration.SettlementMethod;
+import com.example.future_sur_taux.domain.enumeration.DepositType;
 
 @Data
 public class FutureCreationDTO {
@@ -30,13 +32,13 @@ public class FutureCreationDTO {
 
     private String tradingCurrency;
 
-//    private Long clearingHouseId;
     private Long underlyingId;
 
     private SettlementMethod settlementMethod;
     private Boolean instrumentStatus;
 
-    // **Nouveaux champs ajoutés**
-    private Double tickSize;   // plus petite variation de prix
-    private Double tickValue;  // valeur monétaire d’une variation d’un tick
+    private Double tickSize;
+    private Double tickValue;
+
+    private DepositType depositType;  // ✅ Ajouté ici
 }

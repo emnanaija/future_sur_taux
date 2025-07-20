@@ -42,6 +42,7 @@ public class FutureService {
         future.setTradingCurrency(dto.getTradingCurrency());
         future.setPercentageMargin(dto.getPercentageMargin());
         future.setInitialMarginAmount(dto.getInitialMarginAmount());
+        future.setDepositType(dto.getDepositType());
 
         // Relation Underlying
         Underlying underlying = underlyingRepository.findById(dto.getUnderlyingId())
@@ -72,10 +73,11 @@ public class FutureService {
         future.setOrderDeletionDate(null);
 
         // Enums à null ou à une valeur par défaut (à adapter selon ton contexte)
-        future.setDepositType(DepositType.RATE);               // Exemple : NONE si défini
         future.setCollateralMethod(CollateralMethod.CASHCOLLATERAL);     // Exemple : NONE si défini
 
         // Sauvegarde en base
         return futureRepository.save(future);
     }
+
+
 }

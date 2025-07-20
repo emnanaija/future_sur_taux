@@ -23,5 +23,7 @@ public class FutureController {
         Future future = futureService.createFuture(dto);
         return ResponseEntity.ok(future);
     }
+
+
 }
 
