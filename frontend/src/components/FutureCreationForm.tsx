@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { ChevronRight, ChevronDown, Calendar, Info, DollarSign, TrendingUp, Settings, CheckCircle2, AlertCircle } from 'lucide-react';
 
@@ -73,9 +73,12 @@ export default function ImprovedFuturesForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [expandedSections, setExpandedSections] = useState({});
   const [editMode, setEditMode] = useState<'tickValue' | 'contractMultiplier'>('tickValue');
+  // Ajoute les states string pour tous les champs numériques à décimales
   const [tickSizeStr, setTickSizeStr] = useState('');
-  const [tickValueInput, setTickValueInput] = useState(0);
-  const [contractMultiplierInput, setContractMultiplierInput] = useState(0);
+  const [contractMultiplierStr, setContractMultiplierStr] = useState('');
+  const [percentageMarginStr, setPercentageMarginStr] = useState('');
+  const [tickValueStr, setTickValueStr] = useState('');
+  const [initialMarginAmountStr, setInitialMarginAmountStr] = useState('');
   const [completedSections, setCompletedSections] = useState(new Set());
   const [formErrors, setFormErrors] = useState({});
   const [settlementMethods, setSettlementMethods] = useState<string[]>([]);
@@ -115,109 +118,109 @@ export default function ImprovedFuturesForm() {
     }
   }, [form.underlyingType]);
 
-  // Update tickSizeStr when tickSize changes
+  // Synchronise les states string avec le form à chaque changement
   useEffect(() => {
     setTickSizeStr(form.tickSize > 0 ? form.tickSize.toString() : '');
-  }, [form.tickSize]);
+    setContractMultiplierStr(form.contractMultiplier > 0 ? form.contractMultiplier.toString() : '');
+    setPercentageMarginStr(form.percentageMargin > 0 ? form.percentageMargin.toString() : '');
+    setTickValueStr(form.tickValue > 0 ? form.tickValue.toString() : '');
+    setInitialMarginAmountStr(form.initialMarginAmount > 0 ? form.initialMarginAmount.toString() : '');
+  }, [form.tickSize, form.contractMultiplier, form.percentageMargin, form.tickValue, form.initialMarginAmount]);
 
-  // Handle tick size, tick value, and contract multiplier calculations
-  useEffect(() => {
+  // Handle tick size, tick value, and contract multiplier calculations with debounce
+  const updateTickValues = useCallback(() => {
     const tickSize = parseTickSize(tickSizeStr);
     if (editMode === 'tickValue') {
-      const contractMultiplierCalc = tickSize > 0 ? tickValueInput / tickSize : 0;
-      setForm(prev => {
-        if (
-          prev.tickSize !== tickSize ||
-          prev.tickValue !== tickValueInput ||
-          prev.contractMultiplier !== contractMultiplierCalc
-        ) {
-          return {
-            ...prev,
-            tickSize,
-            tickValue: tickValueInput,
-            contractMultiplier: contractMultiplierCalc,
-          };
-        }
-        return prev;
-      });
-      setContractMultiplierInput(contractMultiplierCalc);
+      const contractMultiplierCalc = tickSize > 0 ? parseFloat(tickValueStr) / tickSize : 0;
+      setForm(prev => ({
+        ...prev,
+        tickSize,
+        tickValue: parseFloat(tickValueStr),
+        contractMultiplier: contractMultiplierCalc,
+      }));
+      setContractMultiplierStr(contractMultiplierCalc > 0 ? contractMultiplierCalc.toString() : '');
     } else {
-      const tickValueCalc = contractMultiplierInput * tickSize;
-      setForm(prev => {
-        if (
-          prev.tickSize !== tickSize ||
-          prev.contractMultiplier !== contractMultiplierInput ||
-          prev.tickValue !== tickValueCalc
-        ) {
-          return {
-            ...prev,
-            tickSize,
-            contractMultiplier: contractMultiplierInput,
-            tickValue: tickValueCalc,
-          };
-        }
-        return prev;
-      });
-      setTickValueInput(tickValueCalc);
+      const contractMultiplier = parseTickSize(contractMultiplierStr);
+      const tickValueCalc = contractMultiplier * tickSize;
+      setForm(prev => ({
+        ...prev,
+        tickSize,
+        contractMultiplier,
+        tickValue: tickValueCalc,
+      }));
+      setTickValueStr(tickValueCalc > 0 ? tickValueCalc.toString() : '');
     }
-  }, [tickSizeStr, editMode, tickValueInput, contractMultiplierInput]);
+  }, [tickSizeStr, editMode, tickValueStr, contractMultiplierStr]);
+
+  useEffect(() => {
+    const timer = setTimeout(updateTickValues, 300); // 300ms debounce
+    return () => clearTimeout(timer);
+  }, [updateTickValues]);
 
   // Handle margin calculations based on depositType
   const isRate = form.depositType === 'RATE';
   const isAmount = form.depositType === 'AMOUNT';
-  useEffect(() => {
+
+  const updateMarginValues = useCallback(() => {
+    const percentageMargin = parseFloat(percentageMarginStr);
     setForm(prev => {
       if (isRate) {
-        return { ...prev, initialMarginAmount: prev.lotSize * prev.percentageMargin };
+        return { ...prev, percentageMargin, initialMarginAmount: prev.lotSize * percentageMargin };
       } else if (isAmount) {
         return { ...prev, percentageMargin: prev.lotSize > 0 ? prev.initialMarginAmount / prev.lotSize : 0 };
       }
       return prev;
     });
-  }, [form.lotSize, form.depositType]);
+  }, [percentageMarginStr, form.lotSize, form.depositType, form.initialMarginAmount, isRate, isAmount]);
+
+  useEffect(() => {
+    const timer = setTimeout(updateMarginValues, 300); // 300ms debounce
+    return () => clearTimeout(timer);
+  }, [updateMarginValues]);
 
   // Form sections configuration
   const formSections = [
     {
       id: 'identification',
-      title: 'Identification de l\'instrument',
+      title: "Identification de l'instrument",
       icon: <Info className="w-5 h-5" />,
       fields: ['symbol', 'isin', 'description', 'fullName'],
-      description: 'Informations de base de l\'instrument financier'
+      description: 'Informations de base de l’instrument financier',
     },
     {
       id: 'details',
       title: 'Détails & Configuration',
       icon: <Settings className="w-5 h-5" />,
       fields: ['expirationCode', 'parentTicker', 'segment', 'maturityDate'],
-      description: 'Configuration avancée et dates importantes'
+      description: 'Configuration avancée et dates importantes',
     },
     {
       id: 'deposit',
       title: 'Dépôt & Marge',
       icon: <DollarSign className="w-5 h-5" />,
       fields: ['depositType', 'lotSize', 'initialMarginAmount', 'percentageMargin'],
-      description: 'Gestion des marges et tailles de lot'
+      description: 'Gestion des marges et tailles de lot',
     },
     {
       id: 'underlying',
       title: 'Sous-jacents',
       icon: <TrendingUp className="w-5 h-5" />,
       fields: ['underlyingType', 'underlyingId'],
-      description: 'Configuration des actifs sous-jacents'
+      description: 'Configuration des actifs sous-jacents',
     },
     {
       id: 'trading',
       title: 'Négociation',
       icon: <Calendar className="w-5 h-5" />,
       fields: ['firstTradingDate', 'lastTradingDate', 'tradingCurrency', 'tickSize', 'tickValue', 'contractMultiplier', 'settlementMethod'],
-      description: 'Paramètres de trading et cotation'
-    }
+      description: 'Paramètres de trading et cotation',
+    },
   ];
 
   // Validation logic
   const validateSection = (sectionId: string) => {
     const section = formSections.find(s => s.id === sectionId);
+    if (!section) return true;
     const requiredFields = section.fields;
     const errors = {};
 
@@ -236,50 +239,70 @@ export default function ImprovedFuturesForm() {
   // Handlers
   const parseTickSize = (str: string): number => {
     if (!str) return 0;
-    const val = parseFloat(str);
+    const val = parseFloat(str.replace(',', '.')); // Normalize comma to period
     return isNaN(val) ? 0 : val;
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setForm(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : (type === 'number' ? parseFloat(value) || 0 : value)
+      [name]: type === 'checkbox' ? checked : (type === 'number' ? parseFloat(value.replace(',', '.')) || 0 : value),
     }));
 
-    if (formErrors[name] && value.trim()) {
+    if (formErrors[name] && typeof value === 'string' && value.trim()) {
       setFormErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
       });
     }
-  };
+  }, [formErrors]);
 
-  const handlePercentageMarginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value) || 0;
-    setForm(prev => ({ ...prev, percentageMargin: val, initialMarginAmount: prev.lotSize * val }));
-  };
-
-  const handleInitialMarginAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value) || 0;
-    setForm(prev => ({ ...prev, initialMarginAmount: val, percentageMargin: prev.lotSize > 0 ? val / prev.lotSize : 0 }));
-  };
-
+  // Handlers pour chaque champ à décimales
   const handleTickSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTickSizeStr(e.target.value);
+    const value = e.target.value;
+    setTickSizeStr(value);
+    const tickSize = parseFloat(value.replace(',', '.'));
+    if (!isNaN(tickSize)) {
+      setForm(prev => ({ ...prev, tickSize }));
+    }
   };
-
-  const handleTickValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value) || 0;
-    setTickValueInput(val);
-  };
-
   const handleContractMultiplierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value) || 0;
-    setContractMultiplierInput(val);
+    const value = e.target.value;
+    setContractMultiplierStr(value);
+    const contractMultiplier = parseFloat(value.replace(',', '.'));
+    if (!isNaN(contractMultiplier)) {
+      setForm(prev => ({ ...prev, contractMultiplier }));
+    }
+  };
+  const handlePercentageMarginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPercentageMarginStr(value);
+    const percentageMargin = parseFloat(value.replace(',', '.'));
+    if (!isNaN(percentageMargin)) {
+      setForm(prev => ({ ...prev, percentageMargin }));
+    }
+  };
+  const handleTickValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTickValueStr(value);
+    const tickValue = parseFloat(value.replace(',', '.'));
+    if (!isNaN(tickValue)) {
+      setForm(prev => ({ ...prev, tickValue }));
+    }
+  };
+  const handleInitialMarginAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInitialMarginAmountStr(value);
+    const initialMarginAmount = parseFloat(value.replace(',', '.'));
+    if (!isNaN(initialMarginAmount)) {
+      setForm(prev => ({ ...prev, initialMarginAmount }));
+    }
   };
 
+  // Ajoute la fonction handleModeChange pour le mode tickValue/contractMultiplier
   const handleModeChange = (mode: 'tickValue' | 'contractMultiplier') => {
     setEditMode(mode);
   };
@@ -295,12 +318,12 @@ export default function ImprovedFuturesForm() {
     }
   };
 
-  const toggleSection = (sectionId: string) => {
+  const toggleSection = useCallback((sectionId: string) => {
     setExpandedSections(prev => ({
       ...prev,
-      [sectionId]: !prev[sectionId]
+      [sectionId]: !prev[sectionId],
     }));
-  };
+  }, []);
 
   const nextStep = () => {
     if (currentStep < formSections.length - 1) {
@@ -329,19 +352,21 @@ export default function ImprovedFuturesForm() {
           <div
             key={section.id}
             className={`flex items-center cursor-pointer transition-all duration-200 ${
-              index <= currentStep ? 'text-blue-600' : 'text-gray-400'
+              index <= currentStep ? 'text-teal-800' : 'text-gray-500'
             }`}
             onClick={() => goToStep(index)}
           >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-2 transition-all duration-200 ${
-              completedSections.has(section.id) 
-                ? 'bg-green-500 text-white' 
-                : index === currentStep 
-                  ? 'bg-blue-600 text-white' 
-                  : index < currentStep 
-                    ? 'bg-blue-200 text-blue-600' 
-                    : 'bg-gray-200 text-gray-400'
-            }`}>
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center mr-2 transition-all duration-200 ${
+                completedSections.has(section.id)
+                  ? 'bg-teal-600 text-white'
+                  : index === currentStep
+                    ? 'bg-teal-500 text-white'
+                    : index < currentStep
+                      ? 'bg-teal-200 text-teal-800'
+                      : 'bg-gray-200 text-gray-500'
+              }`}
+            >
               {completedSections.has(section.id) ? (
                 <CheckCircle2 className="w-4 h-4" />
               ) : (
@@ -353,8 +378,8 @@ export default function ImprovedFuturesForm() {
         ))}
       </div>
       <div className="w-full bg-gray-200 rounded-full h-2">
-        <div 
-          className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
+        <div
+          className="bg-teal-600 h-2 rounded-full transition-all duration-500 ease-out"
           style={{ width: `${((currentStep + 1) / formSections.length) * 100}%` }}
         ></div>
       </div>
@@ -370,7 +395,7 @@ export default function ImprovedFuturesForm() {
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       {description && <p className="text-xs text-gray-500">{description}</p>}
-      
+
       {type === 'select' ? (
         <select
           id={name}
@@ -378,7 +403,7 @@ export default function ImprovedFuturesForm() {
           value={value !== undefined ? value : form[name]}
           onChange={onChange || handleChange}
           disabled={disabled}
-          className={`w-full p-3 border rounded-lg transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          className={`w-full p-3 border rounded-lg transition-all duration-200 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
             formErrors[name] ? 'border-red-500 bg-red-50' : 'border-gray-300'
           } ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'hover:border-gray-400'}`}
         >
@@ -397,12 +422,13 @@ export default function ImprovedFuturesForm() {
           placeholder={placeholder}
           disabled={disabled}
           readOnly={readOnly}
-          className={`w-full p-3 border rounded-lg transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          className={`w-full p-3 border rounded-lg transition-all duration-200 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
             formErrors[name] ? 'border-red-500 bg-red-50' : 'border-gray-300'
           } ${disabled || readOnly ? 'bg-gray-100 cursor-not-allowed' : 'hover:border-gray-400'}`}
+          step={type === 'number' ? 'any' : undefined} // Allows decimal input for number fields
         />
       )}
-      
+
       {formErrors[name] && (
         <div className="flex items-center text-red-600 text-sm">
           <AlertCircle className="w-4 h-4 mr-1" />
@@ -415,7 +441,7 @@ export default function ImprovedFuturesForm() {
   // Render current section
   const renderCurrentSection = () => {
     const section = formSections[currentStep];
-    
+
     switch (section.id) {
       case 'identification':
         return (
@@ -504,15 +530,15 @@ export default function ImprovedFuturesForm() {
                 description="Nombre d'unités par lot"
               />
             </div>
-            
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-blue-800 mb-4">Configuration des marges</h4>
+
+            <div className="bg-teal-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-teal-800 mb-4">Configuration des marges</h4>
               <div className="flex space-x-2 mb-4">
                 <button
                   type="button"
                   onClick={() => setForm(prev => ({ ...prev, depositType: 'AMOUNT' }))}
                   className={`flex-1 p-2 rounded-lg font-medium transition-all ${
-                    isAmount ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border border-blue-600'
+                    isAmount ? 'bg-teal-600 text-white' : 'bg-white text-teal-600 border border-teal-600'
                   }`}
                 >
                   Montant fixe
@@ -521,13 +547,13 @@ export default function ImprovedFuturesForm() {
                   type="button"
                   onClick={() => setForm(prev => ({ ...prev, depositType: 'RATE' }))}
                   className={`flex-1 p-2 rounded-lg font-medium transition-all ${
-                    isRate ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border border-blue-600'
+                    isRate ? 'bg-teal-600 text-white' : 'bg-white text-teal-600 border border-teal-600'
                   }`}
                 >
                   Pourcentage
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <EnhancedInput
                   label="Montant de la marge initiale"
@@ -536,17 +562,17 @@ export default function ImprovedFuturesForm() {
                   placeholder="Ex: 5000"
                   readOnly={!isAmount}
                   icon={<DollarSign className="w-4 h-4" />}
-                  onChange={handleInitialMarginAmountChange}
-                  value={form.initialMarginAmount}
+                  onChange={handleInitialMarginAmountChange as (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void}
+                  value={initialMarginAmountStr}
                 />
                 <EnhancedInput
                   label="Pourcentage de marge"
                   name="percentageMargin"
                   type="number"
-                  placeholder="Ex: 10"
+                  placeholder="Ex: 10.5"
                   readOnly={!isRate}
-                  onChange={handlePercentageMarginChange}
-                  value={form.percentageMargin}
+                  onChange={handlePercentageMarginChange as (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void}
+                  value={percentageMarginStr}
                 />
               </div>
             </div>
@@ -556,9 +582,9 @@ export default function ImprovedFuturesForm() {
       case 'underlying':
         return (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg">
+            <div className="bg-gradient-to-r from-teal-50 to-white p-6 rounded-lg">
               <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
-                <TrendingUp className="w-5 h-5 mr-2 text-green-600" />
+                <TrendingUp className="w-5 h-5 mr-2 text-teal-600" />
                 Configuration des sous-jacents
               </h4>
               <div className="space-y-4">
@@ -589,87 +615,83 @@ export default function ImprovedFuturesForm() {
             {/* Trading Dates */}
             <div className="bg-gray-50 p-6 rounded-lg">
               <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
-                <Calendar className="w-5 h-5 mr-2 text-blue-600" />
+                <Calendar className="w-5 h-5 mr-2 text-teal-600" />
                 Dates de négociation
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <EnhancedInput
-                  label="Première négociation"
-                  name="firstTradingDate"
-                  type="date"
-                />
-                <EnhancedInput
-                  label="Dernière négociation"
-                  name="lastTradingDate"
-                  type="date"
-                />
-                <EnhancedInput
-                  label="Devise de négociation"
-                  name="tradingCurrency"
-                  placeholder="Ex: EUR, USD"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Première négociation</label>
+                  <EnhancedInput label="Première négociation" name="firstTradingDate" type="date" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Dernière négociation</label>
+                  <EnhancedInput label="Dernière négociation" name="lastTradingDate" type="date" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Devise de négociation</label>
+                  <EnhancedInput label="Devise de négociation" name="tradingCurrency" placeholder="Ex: EUR, USD" />
+                </div>
               </div>
             </div>
 
             {/* Tick Configuration */}
-            <div className="bg-yellow-50 p-6 rounded-lg">
+            <div className="bg-coral-50 p-6 rounded-lg">
               <h4 className="font-semibold text-gray-800 mb-4">Configuration des ticks et multiplicateurs</h4>
-              
-              <div className="flex space-x-2 mb-6">
-                <button
-                  type="button"
-                  onClick={() => handleModeChange('tickValue')}
-                  className={`flex-1 p-3 rounded-lg font-medium transition-all ${
-                    editMode === 'tickValue' ? 'bg-yellow-600 text-white' : 'bg-white text-yellow-700 border border-yellow-600'
-                  }`}
-                >
-                  Mode Tick Value
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleModeChange('contractMultiplier')}
-                  className={`flex-1 p-3 rounded-lg font-medium transition-all ${
-                    editMode === 'contractMultiplier' ? 'bg-yellow-600 text-white' : 'bg-white text-yellow-700 border border-yellow-600'
-                  }`}
-                >
-                  Mode Multiplicateur
-                </button>
+
+              <div className="mb-6">
+                <p className="text-sm text-gray-600 mb-2">Choisissez le mode de saisie :</p>
+                <div className="flex space-x-6">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      value="tickValue"
+                      checked={editMode === 'tickValue'}
+                      onChange={() => handleModeChange('tickValue')}
+                      className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      Tick Value <span className="text-xs text-gray-500">(Saisir pour calculer Multiplicateur)</span>
+                    </span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      value="contractMultiplier"
+                      checked={editMode === 'contractMultiplier'}
+                      onChange={() => handleModeChange('contractMultiplier')}
+                      className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      Multiplicateur <span className="text-xs text-gray-500">(Saisir pour calculer Tick Value)</span>
+                    </span>
+                  </label>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <EnhancedInput
-                  label="Tick Size"
-                  name="tickSize"
-                  value={tickSizeStr}
-                  onChange={handleTickSizeChange}
-                  placeholder="Ex: 0.01"
-                  description="Plus petit mouvement de prix"
-                />
-                <EnhancedInput
-                  label={`Tick Value ${editMode === 'tickValue' ? '' : '(calculé)'}`}
-                  name="tickValue"
-                  type="number"
-                  value={editMode === 'tickValue' ? tickValueInput : form.tickValue}
-                  onChange={handleTickValueChange}
-                  readOnly={editMode !== 'tickValue'}
-                  placeholder="Ex: 12.50"
-                />
-                <EnhancedInput
-                  label={`Multiplicateur ${editMode === 'contractMultiplier' ? '' : '(calculé)'}`}
-                  name="contractMultiplier"
-                  type="number"
-                  value={editMode === 'contractMultiplier' ? contractMultiplierInput : form.contractMultiplier}
-                  onChange={handleContractMultiplierChange}
-                  readOnly={editMode !== 'contractMultiplier'}
-                  placeholder="Ex: 1000"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tick Size</label>
+                  <EnhancedInput label="Tick Size" name="tickSize" type="number" value={tickSizeStr} onChange={handleTickSizeChange as (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void} placeholder="Ex: 0.01" description="Plus petit mouvement de prix" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tick Value {editMode !== 'tickValue' && '(calculé)'}
+                  </label>
+                  <EnhancedInput label="Tick Value" name="tickValue" type="number" value={editMode === 'tickValue' ? tickValueStr : form.tickValue} onChange={handleTickValueChange as (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void} readOnly={editMode !== 'tickValue'} placeholder="Ex: 12.50" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Multiplicateur {editMode !== 'contractMultiplier' && '(calculé)'}
+                  </label>
+                  <EnhancedInput label="Multiplicateur" name="contractMultiplier" type="number" value={editMode === 'contractMultiplier' ? contractMultiplierStr : form.contractMultiplier} onChange={handleContractMultiplierChange as (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void} readOnly={editMode !== 'contractMultiplier'} placeholder="Ex: 1000.5" />
+                </div>
               </div>
             </div>
 
             {/* Settlement and Status */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-800">Mode de livraison</h4>
+                <h4 className="font-semibold text-gray-800 mb-2">Mode de livraison</h4>
                 <EnhancedInput
                   label="Méthode de règlement"
                   name="settlementMethod"
@@ -678,17 +700,14 @@ export default function ImprovedFuturesForm() {
                   description="Type de dénouement à l'échéance"
                 />
               </div>
-
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-800">Statut de cotation</h4>
-                <div className="flex space-x-2">
+                <h4 className="font-semibold text-gray-800 mb-2">Statut de cotation</h4>
+                <div className="flex space-x-4">
                   <button
                     type="button"
                     onClick={() => setForm(prev => ({ ...prev, instrumentStatus: true }))}
                     className={`flex-1 p-3 rounded-lg font-semibold transition-all ${
-                      form.instrumentStatus 
-                        ? 'bg-green-600 text-white shadow-lg' 
-                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                      form.instrumentStatus ? 'bg-teal-600 text-white shadow-lg' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                     }`}
                   >
                     ✓ Côté
@@ -697,9 +716,7 @@ export default function ImprovedFuturesForm() {
                     type="button"
                     onClick={() => setForm(prev => ({ ...prev, instrumentStatus: false }))}
                     className={`flex-1 p-3 rounded-lg font-semibold transition-all ${
-                      !form.instrumentStatus 
-                        ? 'bg-red-600 text-white shadow-lg' 
-                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                      !form.instrumentStatus ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                     }`}
                   >
                     ✗ Non côté
@@ -716,7 +733,7 @@ export default function ImprovedFuturesForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white">
       <div className="max-w-6xl mx-auto p-6">
         {/* Header */}
         <div className="text-center mb-8">
@@ -730,9 +747,7 @@ export default function ImprovedFuturesForm() {
           {/* Current Section */}
           <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
             <div className="flex items-center mb-6">
-              <div className="p-3 bg-blue-100 rounded-lg mr-4">
-                {formSections[currentStep].icon}
-              </div>
+              <div className="p-3 bg-teal-100 rounded-lg mr-4">{formSections[currentStep].icon}</div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">{formSections[currentStep].title}</h2>
                 <p className="text-gray-600">{formSections[currentStep].description}</p>
@@ -749,9 +764,7 @@ export default function ImprovedFuturesForm() {
               onClick={prevStep}
               disabled={currentStep === 0}
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                currentStep === 0 
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                  : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                currentStep === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
               }`}
             >
               ← Précédent
@@ -764,7 +777,7 @@ export default function ImprovedFuturesForm() {
             {currentStep === formSections.length - 1 ? (
               <button
                 type="submit"
-                className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                className="px-8 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg font-semibold hover:from-teal-700 hover:to-teal-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
                 Créer le Future
               </button>
@@ -772,7 +785,7 @@ export default function ImprovedFuturesForm() {
               <button
                 type="button"
                 onClick={nextStep}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                className="px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg font-medium hover:from-teal-700 hover:to-teal-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
                 Suivant →
               </button>
