@@ -604,27 +604,25 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
 
           {currentStep === 1 && (
             <div className="space-y-3">
-              {/* Boutons de mode avec animation */}
-              <div className="flex space-x-2 mb-3">
+              {/* Boutons de mode avec animation pour le type de dépôt */}
+              <div className="flex justify-center space-x-2 my-2">
                 <button
                   type="button"
                   onClick={() => setForm(prev => ({ ...prev, depositType: 'AMOUNT' }))}
-                  className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
-                    isAmount 
-                      ? 'bg-teal-600 text-white shadow-lg' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                  className={`px-3 py-2 rounded-lg font-medium transition-all duration-300 transform
+                    ${isAmount 
+                      ? 'bg-teal-600 text-white scale-105 shadow-lg' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                 >
                   Montant fixe
                 </button>
                 <button
                   type="button"
                   onClick={() => setForm(prev => ({ ...prev, depositType: 'RATE' }))}
-                  className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
-                    isRate 
-                      ? 'bg-teal-600 text-white shadow-lg' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                  className={`px-3 py-2 rounded-lg font-medium transition-all duration-300 transform
+                    ${isRate 
+                      ? 'bg-teal-600 text-white scale-105 shadow-lg' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                 >
                   Pourcentage
                 </button>
@@ -773,72 +771,59 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
               {/* Section Tick avec UX améliorée */}
               <div className="bg-gradient-to-r from-teal-50 to-white p-3 rounded-lg space-y-3">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">Configuration des Ticks</h3>
-                  <div className="relative group">
-                    <Info className="w-5 h-5 text-gray-400 cursor-help" />
-                    <Tooltip>
-                      Configurez soit la Tick Value, soit le Multiplicateur. L'autre valeur sera calculée automatiquement.
-                    </Tooltip>
-                  </div>
+                 
                 </div>
-
                 {/* Tick Size avec validation visuelle */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Tick Size
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={tickSizeStr}
-                      onChange={handleTickSizeChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg
-                               transition-all duration-200
-                               focus:ring-2 focus:ring-teal-500 focus:border-transparent
-                               hover:border-gray-400"
-                      placeholder="Ex: 0.01"
-                    />
-                    {parseFloat(tickSizeStr) > 0 && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-500"
-                      >
-                        <CheckCircle2 className="w-5 h-5" />
-                      </motion.div>
+                <div className="flex items-end space-x-4 mb-2">
+                  <div className="flex-0">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Tick Size
+                    </label>
+                    <div className="relative max-w-xs">
+                      <input
+                        type="text"
+                        value={tickSizeStr}
+                        onChange={handleTickSizeChange}
+                        className="w-32 px-4 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-teal-500 focus:border-transparent hover:border-gray-400"
+                        placeholder="Ex: 0.01"
+                      />
+                      {parseFloat(tickSizeStr) > 0 && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-500"
+                        >
+                        </motion.div>
+                      )}
+                    </div>
+                    {formErrors.tickSize && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.tickSize}</p>
                     )}
                   </div>
-                  {formErrors.tickSize && (
-                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.tickSize}</p>
-                  )}
-                </div>
-
-                {/* Boutons de mode avec animation */}
-                <div className="relative">
-                  <div className="flex space-x-4">
+                  {/* Boutons de mode avec animation */}
+                  <div className="flex space-x-2">
                     <button
                       type="button"
                       onClick={() => handleModeChange('tickValue')}
-                      className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-300 transform
-                                ${editMode === 'tickValue' 
-                                  ? 'bg-teal-600 text-white scale-105 shadow-lg' 
-                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 transform
+                        ${editMode === 'tickValue' 
+                          ? 'bg-teal-600 text-white scale-105 shadow-lg' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                     >
                       Saisir Tick Value
                     </button>
                     <button
                       type="button"
                       onClick={() => handleModeChange('contractMultiplier')}
-                      className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-300 transform
-                                ${editMode === 'contractMultiplier' 
-                                  ? 'bg-teal-600 text-white scale-105 shadow-lg' 
-                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 transform
+                        ${editMode === 'contractMultiplier' 
+                          ? 'bg-teal-600 text-white scale-105 shadow-lg' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                     >
                       Saisir Multiplicateur
                     </button>
                   </div>
                 </div>
-
                 {/* Champs de saisie avec animation */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -862,17 +847,16 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                         onChange={handleTickValueChange}
                         readOnly={editMode !== 'tickValue'}
                         className={`w-full px-4 py-2 border rounded-lg transition-all duration-200
-                                  ${editMode !== 'tickValue'
-                                    ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
-                                    : 'border-gray-300 focus:ring-2 focus:ring-teal-500 hover:border-gray-400'
-                                  }`}
+                          ${editMode !== 'tickValue'
+                            ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
+                            : 'border-gray-300 focus:ring-2 focus:ring-teal-500 hover:border-gray-400'
+                          }`}
                       />
                       {formErrors.tickValue && (
                         <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.tickValue}</p>
                       )}
                     </motion.div>
                   </div>
-
                   <div className="space-y-2">
                     <label className="flex items-center text-sm font-medium text-gray-700">
                       Multiplicateur
@@ -894,10 +878,10 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                         onChange={handleContractMultiplierChange}
                         readOnly={editMode !== 'contractMultiplier'}
                         className={`w-full px-4 py-2 border rounded-lg transition-all duration-200
-                                  ${editMode !== 'contractMultiplier'
-                                    ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
-                                    : 'border-gray-300 focus:ring-2 focus:ring-teal-500 hover:border-gray-400'
-                                  }`}
+                          ${editMode !== 'contractMultiplier'
+                            ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
+                            : 'border-gray-300 focus:ring-2 focus:ring-teal-500 hover:border-gray-400'
+                          }`}
                       />
                       {formErrors.contractMultiplier && (
                         <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.contractMultiplier}</p>
@@ -906,9 +890,8 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                   </div>
                 </div>
               </div>
-
               {/* Autres champs de négociation */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
                     Date de première négociation <span className="text-red-500">*</span>
@@ -1089,11 +1072,11 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
             <button
               type="button"
               onClick={prevStep}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                currentStep === 0
+              className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 transform hover:scale-105
+                ${currentStep === 0
                   ? 'opacity-50 cursor-not-allowed bg-gray-200'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-              }`}
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-md'
+                }`}
               disabled={currentStep === 0}
             >
               ← Précédent
@@ -1101,14 +1084,13 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-6 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg text-sm font-semibold
-                       hover:from-teal-700 hover:to-teal-800 transition-all duration-200
-                       focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-teal-500
-                       ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-3 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg font-medium
+                hover:from-teal-700 hover:to-teal-800 transition-all duration-200 transform hover:scale-105
+                focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 hover:shadow-lg
+                disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
             >
               <span className="flex items-center">
                 {isSubmitting ? 'Création en cours...' : 'Créer le Future'}
-                {!isSubmitting && <ChevronRight className="w-4 h-4 ml-2" />}
               </span>
             </button>
           </div>
