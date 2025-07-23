@@ -333,18 +333,12 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
     },
     {
       id: 'deposit',
-      title: "Dépôt & Marges",
+      title: "Dépôt & sous-jacents",
       icon: <DollarSign className="w-5 h-5" />,
       description: "Configuration des marges",
       fields: ['depositType', 'lotSize', 'initialMarginAmount', 'percentageMargin']
     },
-    {
-      id: 'underlying',
-      title: "Sous-jacents",
-      icon: <TrendingUp className="w-5 h-5" />,
-      description: "Définition du sous-jacent",
-      fields: ['underlyingType', 'underlyingId']
-    },
+    
     {
       id: 'trading',
       title: "Négociation",
@@ -724,11 +718,7 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                   )}
                 </div>
               </div>
-            </div>
-          )}
-
-          {currentStep === 2 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Section Sous-jacents */}
               <section className="bg-white rounded-lg shadow p-3 border border-gray-100 hover:shadow-lg transition-all duration-200">
               
@@ -774,9 +764,11 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                 </div>
               </section>
             </div>
+            </div>
           )}
 
-          {currentStep === 3 && (
+        
+          {currentStep === 2 && (
             <div className="space-y-3">
               {/* Section Tick avec UX améliorée */}
               <div className="bg-gradient-to-r from-teal-50 to-white p-3 rounded-lg space-y-3">
