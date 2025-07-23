@@ -28,6 +28,20 @@ interface FutureCreationDTO {
   depositType: string;
 }
 
+// Ajouter l'interface pour les sections
+interface FormSection {
+  id: string;
+  title: string;
+  icon: React.ReactNode;
+  description: string;
+  fields: (keyof FutureCreationDTO)[];
+}
+
+// Ajouter l'interface pour les erreurs
+interface FormErrors {
+  [key: string]: string;
+}
+
 const FutureCreationForm: React.FC = () => {
   const [form, setForm] = useState<FutureCreationDTO>({
     symbol: '',
@@ -67,7 +81,9 @@ const [currentStep, setCurrentStep] = useState(0);
   const [tickValueInput, setTickValueInput] = useState(0);
   const [contractMultiplierInput, setContractMultiplierInput] = useState(0);
 const [completedSections, setCompletedSections] = useState(new Set());
-  const [formErrors, setFormErrors] = useState({});
+  // Définir correctement formErrors avec son type
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [justArrivedOnLastStep, setJustArrivedOnLastStep] = useState(false);
   useEffect(() => {
     async function fetchEnums() {
       const [settlementRes, depositRes, typeRes] = await Promise.all([
@@ -226,14 +242,60 @@ const parsePercentageMargin = (str: string): number => {
     setEditMode(mode);
   };
 
+  // Ajouter un état pour la validation globale
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fonction de validation complète
+  const validateForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
+
+    // Validation des champs obligatoires
+    if (!form.symbol) errors.symbol = 'Le symbole est requis';
+    if (!form.underlyingType) errors.underlyingType = 'Le type de sous-jacent est requis';
+    if (!form.underlyingId) errors.underlyingId = 'Le sous-jacent est requis';
+    if (!form.depositType) errors.depositType = 'Le type de dépôt est requis';
+    if (!form.lotSize) errors.lotSize = 'La taille de lot est requise';
+    if (!form.tickSize) errors.tickSize = 'Le tick size est requis';
+    if (!form.firstTradingDate) errors.firstTradingDate = 'La date de première négociation est requise';
+    if (!form.lastTraadingDate) errors.lastTraadingDate = 'La date de dernière négociation est requise';
+    if (!form.tradingCurrency) errors.tradingCurrency = 'La devise de négociation est requise';
+    if (!form.settlementMethod) errors.settlementMethod = 'La méthode de règlement est requise';
+
+    // Validation des valeurs numériques
+    if (form.tickSize <= 0) errors.tickSize = 'Le tick size doit être supérieur à 0';
+    if (form.lotSize <= 0) errors.lotSize = 'La taille de lot doit être supérieure à 0';
+
+    // Mise à jour des erreurs
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Modifier le handleSubmit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Empêcher la soumission si on n'est pas sur la dernière étape
+    if (currentStep !== formSections.length - 1) {
+      return;
+    }
+    // Empêcher la double soumission
+    if (isSubmitting) return;
+    
+    // Valider le formulaire
+    if (!validateForm()) {
+      alert('Veuillez corriger les erreurs avant de soumettre le formulaire');
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
       await axios.post('/api/futures', form);
       alert('Future créé avec succès');
+      // Optionnel : rediriger ou réinitialiser le formulaire
     } catch (err) {
-      alert('Erreur lors de la création');
+      alert('Erreur lors de la création. Veuillez vérifier les données et réessayer.');
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   const [initialMarginAmountStr, setInitialMarginAmountStr] = useState('');
@@ -260,31 +322,35 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
 };
 
 
-  // Ajouter les sections du formulaire
-  const formSections = [
+  // Définir les sections avec leurs champs requis
+  const formSections: FormSection[] = [
     {
       id: 'identification',
       title: "Identification",
       icon: <Info className="w-5 h-5" />,
-      description: "Informations de base"
+      description: "Informations de base",
+      fields: ['symbol', 'description', 'isin', 'fullName']
     },
     {
       id: 'deposit',
       title: "Dépôt & Marges",
       icon: <DollarSign className="w-5 h-5" />,
-      description: "Configuration des marges"
+      description: "Configuration des marges",
+      fields: ['depositType', 'lotSize', 'initialMarginAmount', 'percentageMargin']
     },
     {
       id: 'underlying',
       title: "Sous-jacents",
       icon: <TrendingUp className="w-5 h-5" />,
-      description: "Définition du sous-jacent"
+      description: "Définition du sous-jacent",
+      fields: ['underlyingType', 'underlyingId']
     },
     {
       id: 'trading',
       title: "Négociation",
       icon: <Calendar className="w-5 h-5" />,
-      description: "Paramètres de trading"
+      description: "Paramètres de trading",
+      fields: ['firstTradingDate', 'lastTraadingDate', 'tradingCurrency', 'tickSize', 'settlementMethod']
     }
   ];
 
@@ -292,10 +358,69 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
   // Fonctions de navigation
+  // Améliorer la fonction de validation des étapes
+  const validateStep = (stepIndex: number): boolean => {
+    const section = formSections[stepIndex];
+    const errors: FormErrors = {};
+
+    section.fields.forEach(field => {
+      const value = form[field];
+      if (value === undefined || value === '' || value === 0) {
+        errors[field] = `Le champ ${field} est requis`;
+      }
+
+      // Validations spécifiques par champ
+      switch (field) {
+        case 'tickSize':
+          if (parseFloat(String(value)) <= 0) {
+            errors[field] = 'Le tick size doit être supérieur à 0';
+          }
+          break;
+        case 'lotSize':
+          if (parseFloat(String(value)) <= 0) {
+            errors[field] = 'La taille de lot doit être supérieure à 0';
+          }
+          break;
+        // Ajouter d'autres validations spécifiques si nécessaire
+      }
+    });
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Modifier la fonction nextStep pour valider uniquement l'étape courante et effacer les erreurs des autres étapes
   const nextStep = () => {
     if (currentStep < formSections.length - 1) {
-      setCompletedSteps(prev => new Set(prev).add(currentStep));
-      setCurrentStep(prev => prev + 1);
+      const section = formSections[currentStep];
+      const errors: FormErrors = {};
+      section.fields.forEach(field => {
+        const value = form[field];
+        if (value === undefined || value === '' || value === 0) {
+          errors[field] = `Le champ ${field} est requis`;
+        }
+        // Validations spécifiques
+        switch (field) {
+          case 'tickSize':
+            if (parseFloat(String(value)) <= 0) {
+              errors[field] = 'Le tick size doit être supérieur à 0';
+            }
+            break;
+          case 'lotSize':
+            if (parseFloat(String(value)) <= 0) {
+              errors[field] = 'La taille de lot doit être supérieure à 0';
+            }
+            break;
+        }
+      });
+      setFormErrors(errors); // On ne garde que les erreurs de l'étape courante
+      if (Object.keys(errors).length === 0) {
+        setCompletedSteps(prev => new Set(prev).add(currentStep));
+        setCurrentStep(prev => prev + 1);
+        if (currentStep === formSections.length - 2) {
+          setJustArrivedOnLastStep(true);
+        }
+      }
     }
   };
 
@@ -384,6 +509,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
                   />
+                  {formErrors.isin && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.isin}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="expirationCode" className="block text-sm font-semibold text-gray-700">
@@ -396,6 +524,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
                   />
+                  {formErrors.expirationCode && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.expirationCode}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="parentTicker" className="block text-sm font-semibold text-gray-700">
@@ -408,6 +539,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
                   />
+                  {formErrors.parentTicker && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.parentTicker}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="description" className="block text-sm font-semibold text-gray-700">
@@ -420,6 +554,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
                   />
+                  {formErrors.description && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.description}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="fullName" className="block text-sm font-semibold text-gray-700">
@@ -432,6 +569,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
                   />
+                  {formErrors.fullName && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.fullName}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="segment" className="block text-sm font-semibold text-gray-700">
@@ -444,6 +584,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
                   />
+                  {formErrors.segment && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.segment}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="maturityDate" className="block text-sm font-semibold text-gray-700">
@@ -457,6 +600,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
                   />
+                  {formErrors.maturityDate && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.maturityDate}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -504,6 +650,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
                     required
                   />
+                  {formErrors.lotSize && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.lotSize}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
@@ -519,6 +668,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     <option value="">Sélectionnez le type de dépôt</option>
                     {depositTypes.map(type => (<option key={type} value={type}>{type}</option>))}
                   </select>
+                  {formErrors.depositType && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.depositType}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700 flex items-center">
@@ -541,6 +693,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                         : 'border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent hover:border-gray-400'
                     }`}
                   />
+                  {formErrors.initialMarginAmount && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.initialMarginAmount}</p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -559,6 +714,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                         : 'border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent'
                     }`}
                   />
+                  {formErrors.percentageMargin && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.percentageMargin}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -593,6 +751,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                       <option value="">Sélectionnez le type du sous-jacent</option>
                       {underlyingTypes.map(type => (<option key={type} value={type}>{type}</option>))}
                     </select>
+                    {formErrors.underlyingType && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.underlyingType}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700">
@@ -609,6 +770,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                       <option value={0}>Sélectionnez le sous-jacent</option>
                       {underlyingAssets.map(asset => (<option key={asset.id} value={asset.id}>{asset.identifier}</option>))}
                     </select>
+                    {formErrors.underlyingId && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.underlyingId}</p>
+                    )}
                   </div>
                 </div>
               </section>
@@ -655,6 +819,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                       </motion.div>
                     )}
                   </div>
+                  {formErrors.tickSize && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.tickSize}</p>
+                  )}
                 </div>
 
                 {/* Boutons de mode avec animation */}
@@ -711,6 +878,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                                     : 'border-gray-300 focus:ring-2 focus:ring-teal-500 hover:border-gray-400'
                                   }`}
                       />
+                      {formErrors.tickValue && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.tickValue}</p>
+                      )}
                     </motion.div>
                   </div>
 
@@ -740,6 +910,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                                     : 'border-gray-300 focus:ring-2 focus:ring-teal-500 hover:border-gray-400'
                                   }`}
                       />
+                      {formErrors.contractMultiplier && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.contractMultiplier}</p>
+                      )}
                     </motion.div>
                   </div>
                 </div>
@@ -759,6 +932,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
                     required
                   />
+                  {formErrors.firstTradingDate && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.firstTradingDate}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
@@ -772,6 +948,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
                     required
                   />
+                  {formErrors.lastTraadingDate && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.lastTraadingDate}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
@@ -784,6 +963,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
                     required
                   />
+                  {formErrors.tradingCurrency && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.tradingCurrency}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
@@ -799,6 +981,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     <option value="">Sélectionnez la méthode de règlement</option>
                     {settlementMethods.map(method => (<option key={method} value={method}>{method}</option>))}
                   </select>
+                  {formErrors.settlementMethod && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle className="w-4 h-4 mr-1" />{formErrors.settlementMethod}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
@@ -883,57 +1068,91 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
       </div>
 
       {/* Section active avec animation */}
-      <form onSubmit={handleSubmit}>
-        <div className="bg-white rounded-2xl shadow-lg p-8 min-h-[500px] relative overflow-hidden">
-          {/* En-tête de la section */}
-          <div className="flex items-center mb-8">
-            <div className="p-3 bg-teal-100 rounded-lg mr-4">
-              {formSections[currentStep].icon}
+      {currentStep === formSections.length - 1 ? (
+        <form onSubmit={handleSubmit}>
+          <div className="bg-white rounded-2xl shadow-lg p-8 min-h-[500px] relative overflow-hidden">
+            {/* En-tête de la section */}
+            <div className="flex items-center mb-8">
+              <div className="p-3 bg-teal-100 rounded-lg mr-4">
+                {formSections[currentStep].icon}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  {formSections[currentStep].title}
+                </h2>
+                <p className="text-gray-600">
+                  {formSections[currentStep].description}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                {formSections[currentStep].title}
-              </h2>
-              <p className="text-gray-600">
-                {formSections[currentStep].description}
-              </p>
+            <div className="transition-all duration-300 transform">
+              {renderStepContent()}
             </div>
           </div>
-
-          {/* Contenu de la section active */}
-          <div className="transition-all duration-300 transform">
-            {renderStepContent()}
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex justify-between mt-6">
-          <button
-            type="button"
-            onClick={prevStep}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-              currentStep === 0
-                ? 'opacity-50 cursor-not-allowed bg-gray-200'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-            }`}
-            disabled={currentStep === 0}
-          >
-            ← Précédent
-          </button>
-
-          {currentStep === formSections.length - 1 ? (
+          {/* Navigation */}
+          <div className="flex justify-between mt-6">
+            <button
+              type="button"
+              onClick={prevStep}
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                currentStep === 0
+                  ? 'opacity-50 cursor-not-allowed bg-gray-200'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
+              disabled={currentStep === 0}
+            >
+              ← Précédent
+            </button>
             <button
               type="submit"
-              className="px-8 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg font-semibold
+              disabled={isSubmitting}
+              className={`px-8 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg font-semibold
                        hover:from-teal-700 hover:to-teal-800 transition-all duration-300 transform hover:-translate-y-1
-                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500
+                       ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <span className="flex items-center">
-                Créer le Future
-                <ChevronRight className="w-5 h-5 ml-2" />
+                {isSubmitting ? 'Création en cours...' : 'Créer le Future'}
+                {!isSubmitting && <ChevronRight className="w-5 h-5 ml-2" />}
               </span>
             </button>
-          ) : (
+          </div>
+        </form>
+      ) : (
+        <div>
+          <div className="bg-white rounded-2xl shadow-lg p-8 min-h-[500px] relative overflow-hidden">
+            {/* En-tête de la section */}
+            <div className="flex items-center mb-8">
+              <div className="p-3 bg-teal-100 rounded-lg mr-4">
+                {formSections[currentStep].icon}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  {formSections[currentStep].title}
+                </h2>
+                <p className="text-gray-600">
+                  {formSections[currentStep].description}
+                </p>
+              </div>
+            </div>
+            <div className="transition-all duration-300 transform">
+              {renderStepContent()}
+            </div>
+          </div>
+          {/* Navigation */}
+          <div className="flex justify-between mt-6">
+            <button
+              type="button"
+              onClick={prevStep}
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                currentStep === 0
+                  ? 'opacity-50 cursor-not-allowed bg-gray-200'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
+              disabled={currentStep === 0}
+            >
+              ← Précédent
+            </button>
             <button
               type="button"
               onClick={nextStep}
@@ -942,9 +1161,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
             >
               Suivant →
             </button>
-          )}
+          </div>
         </div>
-      </form>
+      )}
     </div>
   </div>
 );
