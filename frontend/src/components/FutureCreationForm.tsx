@@ -459,8 +459,8 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
         >
           {/* Contenu des sections avec UX améliorée */}
           {currentStep === 0 && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Champ Symbol avec tooltip et validation */}
                 <div className="group relative">
                   <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
@@ -609,9 +609,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
           )}
 
           {currentStep === 1 && (
-            <div className="space-y-6">
+            <div className="space-y-3">
               {/* Boutons de mode avec animation */}
-              <div className="flex space-x-4 mb-6">
+              <div className="flex space-x-2 mb-3">
                 <button
                   type="button"
                   onClick={() => setForm(prev => ({ ...prev, depositType: 'AMOUNT' }))}
@@ -723,20 +723,12 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
           )}
 
           {currentStep === 2 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Section Sous-jacents */}
-              <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                <div className="flex items-center mb-8">
-                  <div className="p-3 bg-teal-100 rounded-lg mr-4">
-                    <TrendingUp className="w-6 h-6 text-teal-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800">Sous-jacents</h2>
-                    <p className="text-gray-600">Définition du sous-jacent</p>
-                  </div>
-                </div>
+              <section className="bg-white rounded-lg shadow p-3 border border-gray-100 hover:shadow-lg transition-all duration-200">
+              
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700">
                       Type du sous-jacent <span className="text-red-500">*</span>
@@ -780,9 +772,9 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
           )}
 
           {currentStep === 3 && (
-            <div className="space-y-6">
+            <div className="space-y-3">
               {/* Section Tick avec UX améliorée */}
-              <div className="bg-gradient-to-r from-teal-50 to-white p-6 rounded-lg space-y-6">
+              <div className="bg-gradient-to-r from-teal-50 to-white p-3 rounded-lg space-y-3">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-800">Configuration des Ticks</h3>
                   <div className="relative group">
@@ -1023,11 +1015,17 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
   };
 
   return (
-  <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white py-8 px-4 sm:px-6 lg:px-8">
-    <div className="max-w-4xl mx-auto">
-      {/* Stepper */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+  <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white py-2">
+    <div className="max-w-4xl mx-auto px-2">
+      {/* Titre principal */}
+      <div className="text-center mb-3">
+        <h1 className="text-2xl font-bold text-gray-900">Créer un Future</h1>
+        <p className="mt-1 text-xs text-gray-600">Remplissez les informations nécessaires pour créer un nouveau Future</p>
+      </div>
+
+      {/* Stepper avec espacement minimal */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-1">
           {formSections.map((section, index) => (
             <div
               key={section.id}
@@ -1037,29 +1035,29 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
             >
               <div
                 className={`
-                  w-8 h-8 rounded-full flex items-center justify-center mr-2
+                  w-5 h-5 rounded-full flex items-center justify-center mr-1 text-xs
                   ${
                     completedSteps.has(index)
                       ? 'bg-teal-600 text-white'
                       : index === currentStep
-                      ? 'bg-teal-100 text-teal-600 border-2 border-teal-600'
+                      ? 'bg-teal-100 text-teal-600 border border-teal-600'
                       : 'bg-gray-100 text-gray-400'
                   }
                 `}
               >
                 {completedSteps.has(index) ? '✓' : index + 1}
               </div>
-              <span className="hidden sm:block text-sm font-medium">
+              <span className="hidden sm:block text-xs font-medium">
                 {section.title}
               </span>
               {index < formSections.length - 1 && (
-                <div className="hidden sm:block w-12 h-0.5 mx-2 bg-gray-200" />
+                <div className="hidden sm:block w-6 h-0.5 mx-1 bg-gray-200" />
               )}
             </div>
           ))}
         </div>
         {/* Barre de progression */}
-        <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div className="relative h-1 bg-gray-200 rounded-full overflow-hidden">
           <div
             className="absolute h-full bg-teal-600 transition-all duration-300 ease-out"
             style={{ width: `${((currentStep + 1) / formSections.length) * 100}%` }}
@@ -1067,20 +1065,20 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
         </div>
       </div>
 
-      {/* Section active avec animation */}
+      {/* Section active avec espacement minimal */}
       {currentStep === formSections.length - 1 ? (
         <form onSubmit={handleSubmit}>
-          <div className="bg-white rounded-2xl shadow-lg p-8 min-h-[500px] relative overflow-hidden">
-            {/* En-tête de la section */}
-            <div className="flex items-center mb-8">
-              <div className="p-3 bg-teal-100 rounded-lg mr-4">
+          <div className="bg-white rounded-lg shadow p-2 relative overflow-hidden max-h-[calc(100vh-200px)] overflow-y-auto">
+            {/* En-tête de la section avec espacement minimal */}
+            <div className="flex items-center mb-2">
+              <div className="p-1.5 bg-teal-100 rounded mr-2">
                 {formSections[currentStep].icon}
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2 className="text-lg font-bold text-gray-800">
                   {formSections[currentStep].title}
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-xs text-gray-600">
                   {formSections[currentStep].description}
                 </p>
               </div>
@@ -1090,11 +1088,11 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
             </div>
           </div>
           {/* Navigation */}
-          <div className="flex justify-between mt-6">
+          <div className="flex justify-between mt-3">
             <button
               type="button"
               onClick={prevStep}
-              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 currentStep === 0
                   ? 'opacity-50 cursor-not-allowed bg-gray-200'
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
@@ -1106,31 +1104,31 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-8 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg font-semibold
-                       hover:from-teal-700 hover:to-teal-800 transition-all duration-300 transform hover:-translate-y-1
-                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500
+              className={`px-6 py-2 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg text-sm font-semibold
+                       hover:from-teal-700 hover:to-teal-800 transition-all duration-200
+                       focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-teal-500
                        ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <span className="flex items-center">
                 {isSubmitting ? 'Création en cours...' : 'Créer le Future'}
-                {!isSubmitting && <ChevronRight className="w-5 h-5 ml-2" />}
+                {!isSubmitting && <ChevronRight className="w-4 h-4 ml-2" />}
               </span>
             </button>
           </div>
         </form>
       ) : (
         <div>
-          <div className="bg-white rounded-2xl shadow-lg p-8 min-h-[500px] relative overflow-hidden">
-            {/* En-tête de la section */}
-            <div className="flex items-center mb-8">
-              <div className="p-3 bg-teal-100 rounded-lg mr-4">
+          <div className="bg-white rounded-lg shadow p-2 relative overflow-hidden max-h-[calc(100vh-200px)] overflow-y-auto">
+            {/* En-tête de la section avec espacement minimal */}
+            <div className="flex items-center mb-2">
+              <div className="p-1.5 bg-teal-100 rounded mr-2">
                 {formSections[currentStep].icon}
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2 className="text-lg font-bold text-gray-800">
                   {formSections[currentStep].title}
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-xs text-gray-600">
                   {formSections[currentStep].description}
                 </p>
               </div>
