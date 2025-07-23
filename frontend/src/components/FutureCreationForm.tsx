@@ -675,7 +675,7 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700 flex items-center">
                     Montant de la marge initiale
-                    {!isAmount && (
+                    {form.depositType && !isAmount && (
                       <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
                         Calculé automatiquement
                       </span>
@@ -688,7 +688,7 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     onChange={handleInitialMarginAmountInputChange}
                     readOnly={!isAmount}
                     className={`w-full px-4 py-2 border rounded-lg transition-all duration-200 ${
-                      !isAmount 
+                      !isAmount && form.depositType
                         ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
                         : 'border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent hover:border-gray-400'
                     }`}
@@ -699,8 +699,13 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Pourcentage de marge {!isRate && '(calculé)'}
+                  <label className="block text-sm font-semibold text-gray-700 flex items-center">
+                    Pourcentage de marge
+                    {form.depositType && !isRate && (
+                      <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                        Calculé automatiquement
+                      </span>
+                    )}
                   </label>
                   <input
                     type="text"
@@ -709,7 +714,7 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                     onChange={handlePercentageMarginInputChange}
                     readOnly={!isRate}
                     className={`w-full px-4 py-2 border rounded-lg transition duration-200 ${
-                      !isRate 
+                      !isRate && form.depositType
                         ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
                         : 'border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent'
                     }`}
