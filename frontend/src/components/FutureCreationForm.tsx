@@ -1048,7 +1048,7 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
       {/* Section active avec espacement minimal */}
       {currentStep === formSections.length - 1 ? (
         <form onSubmit={handleSubmit}>
-          <div className="bg-white rounded-lg shadow p-2 relative overflow-hidden max-h-[calc(100vh-200px)] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow p-2 relative overflow-hidden">
             {/* En-tête de la section avec espacement minimal */}
             <div className="flex items-center mb-2">
               <div className="p-1.5 bg-teal-100 rounded mr-2">
@@ -1097,7 +1097,7 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
         </form>
       ) : (
         <div>
-          <div className="bg-white rounded-lg shadow p-2 relative overflow-hidden max-h-[calc(100vh-200px)] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow p-2 relative overflow-hidden ">
             {/* En-tête de la section avec espacement minimal */}
             <div className="flex items-center mb-2">
               <div className="p-1.5 bg-teal-100 rounded mr-2">
