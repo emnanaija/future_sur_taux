@@ -326,7 +326,7 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
   const formSections: FormSection[] = [
     {
       id: 'identification',
-      title: "Identification",
+      title: "Identification de l'instrument",
       icon: <Info className="w-5 h-5" />,
       description: "Informations de base",
       fields: ['symbol', 'description', 'isin', 'fullName']
@@ -464,7 +464,7 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                 {/* Champ Symbol avec tooltip et validation */}
                 <div className="group relative">
                   <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                    Symbole <span className="text-red-500 ml-1">*</span>
+                    Code valeur <span className="text-red-500 ml-1">*</span>
                     <div className="relative ml-2">
                       <Info className="w-4 h-4 text-gray-400 cursor-help" />
                       <Tooltip>
@@ -575,7 +575,7 @@ const handleInitialMarginAmountInputChange = (e: React.ChangeEvent<HTMLInputElem
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="segment" className="block text-sm font-semibold text-gray-700">
-                    Segment
+                    Structure marché
                   </label>
                   <input
                     id="segment"
