@@ -1,5 +1,6 @@
 import React from 'react';
 import { FutureFormData } from '../schemas/futureFormSchema';
+import { Info } from 'lucide-react';
 
 interface TradingSectionProps {
   form: FutureFormData;
@@ -40,15 +41,15 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
       {/* Tick Configuration */}
       <div className="bg-gradient-to-r from-teal-50 to-white p-3 rounded-lg space-y-3">
         <div className="flex items-end space-x-4 mb-2">
-          <div className="flex-0">
-            <label className="block text-sm font-medium text-gray-700">
-              Tick Size
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tick Size <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={stringInputs.tickSize}
               onChange={(e) => onTickSizeChange(e.target.value)}
-              className="w-32 px-4 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-teal-500 focus:border-transparent hover:border-gray-400"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-teal-500 focus:border-transparent hover:border-gray-400"
               placeholder="Ex: 0.01"
             />
             {errors.tickSize && (
@@ -72,9 +73,9 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
               type="button"
               onClick={() => onChangeEditMode('contractMultiplier')}
               className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 transform
-                ${editMode === 'contractMultiplier' 
-                  ? 'bg-teal-600 text-white scale-105 shadow-lg' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                ${editMode === 'tickValue' 
+                  ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
+                  : 'bg-teal-600 text-white scale-105 shadow-lg'}`}
             >
               Saisir Multiplicateur
             </button>
@@ -91,6 +92,12 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
                   Calculé automatiquement
                 </span>
               )}
+              <div 
+                className="ml-2 text-teal-600 cursor-help"
+                title="Tick Value = Tick Size × Contract Multiplier"
+              >
+                <Info className="w-4 h-4" />
+              </div>
             </label>
             <input
               type="number"
@@ -107,12 +114,18 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
           
           <div className="space-y-2">
             <label className="flex items-center text-sm font-medium text-gray-700">
-              Multiplicateur
+              Contract Multiplier
               {editMode !== 'contractMultiplier' && (
                 <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
                   Calculé automatiquement
                 </span>
               )}
+              <div 
+                className="ml-2 text-teal-600 cursor-help"
+                title="Contract Multiplier = Tick Value ÷ Tick Size"
+              >
+                <Info className="w-4 h-4" />
+              </div>
             </label>
             <input
               type="number"
