@@ -1,12 +1,14 @@
 import { useState, useCallback } from 'react';
 import { FutureFormData } from '../schemas/futureFormSchema';
 
-// Define form sections with their required fields
+// Define form sections with their required fields and validation rules
 export interface FormSection {
   id: string;
   title: string;
   description: string;
   fields: (keyof FutureFormData)[];
+  requiredFields: (keyof FutureFormData)[];
+  validationMessages: Record<string, string>;
 }
 
 export const FORM_SECTIONS: FormSection[] = [
@@ -14,21 +16,49 @@ export const FORM_SECTIONS: FormSection[] = [
     id: 'identification',
     title: "Identification de l'instrument",
     description: "Informations de base",
-    fields: ['symbol', 'description', 'isin', 'fullName']
+    fields: ['symbol', 'description', 'isin', 'expirationCode', 'parentTicker', 'fullName', 'segment', 'maturityDate'],
+    requiredFields: ['symbol', 'isin', 'fullName'],
+    validationMessages: {
+      symbol: 'Le symbole est requis pour identifier l\'instrument',
+      isin: 'Le code ISIN est obligatoire',
+      fullName: 'Le nom complet de l\'instrument est requis'
+    }
   },
   {
     id: 'deposit',
     title: "Dépôt & sous-jacents",
     description: "Configuration des marges",
-    fields: ['depositType', 'lotSize', 'initialMarginAmount', 'percentageMargin', 'underlyingType', 'underlyingId']
+    fields: ['depositType', 'lotSize', 'initialMarginAmount', 'percentageMargin', 'underlyingType', 'underlyingId'],
+    requiredFields: ['depositType', 'lotSize', 'underlyingType', 'underlyingId'],
+    validationMessages: {
+      depositType: 'Veuillez sélectionner le type de dépôt',
+      lotSize: 'La taille de lot doit être supérieure à 0',
+      underlyingType: 'Veuillez sélectionner le type de sous-jacent',
+      underlyingId: 'Veuillez sélectionner un sous-jacent'
+    }
   },
   {
     id: 'trading',
     title: "Négociation",
     description: "Paramètres de trading",
-    fields: ['firstTradingDate', 'lastTraadingDate', 'tradingCurrency', 'tickSize', 'settlementMethod']
+    fields: ['firstTradingDate', 'lastTraadingDate', 'tradingCurrency', 'tickSize', 'settlementMethod', 'instrumentStatus'],
+    requiredFields: ['firstTradingDate', 'lastTraadingDate', 'tradingCurrency', 'tickSize', 'settlementMethod'],
+    validationMessages: {
+      firstTradingDate: 'La date de première négociation est requise',
+      lastTraadingDate: 'La date de dernière négociation est requise',
+      tradingCurrency: 'La devise de négociation est obligatoire',
+      tickSize: 'Le tick size doit être supérieur à 0',
+      settlementMethod: 'Veuillez sélectionner la méthode de règlement'
+    }
   }
 ];
+
+export interface StepValidationResult {
+  isValid: boolean;
+  missingFields: string[];
+  errorMessages: string[];
+  canProceed: boolean;
+}
 
 export const useFormNavigation = (form: FutureFormData, errors: Record<string, string>) => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -40,7 +70,7 @@ export const useFormNavigation = (form: FutureFormData, errors: Record<string, s
     const section = FORM_SECTIONS[stepIndex];
     if (!section) return false;
 
-    return section.fields.every(field => {
+    return section.requiredFields.every(field => {
       const value = form[field];
       if (typeof value === 'string') {
         return value.trim() !== '';
@@ -55,25 +85,59 @@ export const useFormNavigation = (form: FutureFormData, errors: Record<string, s
     });
   }, [form]);
 
-  // Validate current step
-  const validateCurrentStep = useCallback((): boolean => {
+  // Validate current step with detailed feedback
+  const validateCurrentStep = useCallback((): StepValidationResult => {
     const section = FORM_SECTIONS[currentStep];
-    if (!section) return false;
+    if (!section) {
+      return {
+        isValid: false,
+        missingFields: [],
+        errorMessages: ['Section invalide'],
+        canProceed: false
+      };
+    }
 
-    return section.fields.every(field => {
+    const missingFields: string[] = [];
+    const errorMessages: string[] = [];
+
+    // Check required fields
+    section.requiredFields.forEach(field => {
       const value = form[field];
+      let isValid = true;
+
       if (typeof value === 'string') {
-        return value.trim() !== '';
+        isValid = value.trim() !== '';
+      } else if (typeof value === 'number') {
+        isValid = value > 0;
+      } else if (typeof value === 'boolean') {
+        isValid = true;
+      } else {
+        isValid = value !== undefined && value !== null;
       }
-      if (typeof value === 'number') {
-        return value > 0;
+
+      if (!isValid) {
+        missingFields.push(field as string);
+        errorMessages.push(section.validationMessages[field as string] || `Le champ ${field} est requis`);
       }
-      if (typeof value === 'boolean') {
-        return true;
-      }
-      return value !== undefined && value !== null;
     });
-  }, [currentStep, form]);
+
+    // Check for validation errors
+    section.fields.forEach(field => {
+      if (errors[field as string]) {
+        errorMessages.push(errors[field as string]);
+      }
+    });
+
+    const isValid = missingFields.length === 0 && errorMessages.length === 0;
+    const canProceed = isValid;
+
+    return {
+      isValid,
+      missingFields,
+      errorMessages,
+      canProceed
+    };
+  }, [currentStep, form, errors]);
 
   // Check if current step has errors
   const hasStepErrors = useCallback((): boolean => {
@@ -83,13 +147,65 @@ export const useFormNavigation = (form: FutureFormData, errors: Record<string, s
     return section.fields.some(field => errors[field as string]);
   }, [currentStep, errors]);
 
+  // Get validation summary for current step
+  const getCurrentStepValidation = useCallback((): StepValidationResult => {
+    return validateCurrentStep();
+  }, [validateCurrentStep]);
+
+  // Get validation summary for specific step
+  const getStepValidation = useCallback((stepIndex: number): StepValidationResult => {
+    const section = FORM_SECTIONS[stepIndex];
+    if (!section) {
+      return {
+        isValid: false,
+        missingFields: [],
+        errorMessages: ['Section invalide'],
+        canProceed: false
+      };
+    }
+
+    const missingFields: string[] = [];
+    const errorMessages: string[] = [];
+
+    section.requiredFields.forEach(field => {
+      const value = form[field];
+      let isValid = true;
+
+      if (typeof value === 'string') {
+        isValid = value.trim() !== '';
+      } else if (typeof value === 'number') {
+        isValid = value > 0;
+      } else if (typeof value === 'boolean') {
+        isValid = true;
+      } else {
+        isValid = value !== undefined && value !== null;
+      }
+
+      if (!isValid) {
+        missingFields.push(field as string);
+        errorMessages.push(section.validationMessages[field as string] || `Le champ ${field} est requis`);
+      }
+    });
+
+    const isValid = missingFields.length === 0;
+    const canProceed = isValid;
+
+    return {
+      isValid,
+      missingFields,
+      errorMessages,
+      canProceed
+    };
+  }, [form]);
+
   // Go to next step
   const nextStep = useCallback((): boolean => {
     if (currentStep >= FORM_SECTIONS.length - 1) {
       return false; // Already on last step
     }
 
-    if (!validateCurrentStep()) {
+    const validation = validateCurrentStep();
+    if (!validation.canProceed) {
       return false; // Current step is not valid
     }
 
@@ -148,7 +264,7 @@ export const useFormNavigation = (form: FutureFormData, errors: Record<string, s
     }
 
     // Current step must be valid
-    return validateCurrentStep();
+    return validateCurrentStep().canProceed;
   }, [currentStep, completedSteps, validateCurrentStep]);
 
   // Get progress percentage
@@ -165,6 +281,33 @@ export const useFormNavigation = (form: FutureFormData, errors: Record<string, s
   const getSection = useCallback((index: number): FormSection | undefined => {
     return FORM_SECTIONS[index];
   }, []);
+
+  // Get overall form completion status
+  const getFormCompletionStatus = useCallback(() => {
+    const totalRequiredFields = FORM_SECTIONS.reduce((total, section) => total + section.requiredFields.length, 0);
+    let completedRequiredFields = 0;
+
+    FORM_SECTIONS.forEach(section => {
+      section.requiredFields.forEach(field => {
+        const value = form[field];
+        if (typeof value === 'string' && value.trim() !== '') {
+          completedRequiredFields++;
+        } else if (typeof value === 'number' && value > 0) {
+          completedRequiredFields++;
+        } else if (typeof value === 'boolean') {
+          completedRequiredFields++;
+        } else if (value !== undefined && value !== null) {
+          completedRequiredFields++;
+        }
+      });
+    });
+
+    return {
+      completed: completedRequiredFields,
+      total: totalRequiredFields,
+      percentage: Math.round((completedRequiredFields / totalRequiredFields) * 100)
+    };
+  }, [form]);
 
   return {
     // State
@@ -185,6 +328,9 @@ export const useFormNavigation = (form: FutureFormData, errors: Record<string, s
     getProgressPercentage,
     getCurrentSection,
     getSection,
+    getCurrentStepValidation,
+    getStepValidation,
+    getFormCompletionStatus,
     
     // Constants
     totalSteps: FORM_SECTIONS.length,

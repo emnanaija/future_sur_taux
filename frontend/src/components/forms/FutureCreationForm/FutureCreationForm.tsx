@@ -9,7 +9,12 @@ import { useFutureAPI } from './hooks/useFutureAPI';
 
 // Components
 import { FormStepper } from './common/FormStepper';
-import { IdentificationSection } from './sections/IdentificationSection';
+import { 
+  IdentificationSection, 
+  DepositSection, 
+  TradingSection 
+} from './sections';
+import { ValidationMessage } from './common/ValidationMessage';
 
 // Types
 import { FutureFormData } from './schemas/futureFormSchema';
@@ -79,6 +84,16 @@ const FutureCreationForm: React.FC = () => {
     navigation.goToStep(stepIndex);
   };
 
+  // Handle next step with validation
+  const handleNextStep = () => {
+    const validation = navigation.getCurrentStepValidation();
+    if (!validation.canProceed) {
+      // Show validation message
+      return;
+    }
+    navigation.nextStep();
+  };
+
   // Render form section based on current step
   const renderCurrentSection = () => {
     const currentSection = navigation.getCurrentSection();
@@ -89,6 +104,9 @@ const FutureCreationForm: React.FC = () => {
       deposit: <ClipboardCheck  className="w-5 h-5" />,
       trading: <Calendar className="w-5 h-5" />,
     }[currentSection.id] || <Info className="w-5 h-5" />;
+
+    // Get current step validation
+    const validation = navigation.getCurrentStepValidation();
 
     return (
       <div className="bg-white rounded-lg shadow p-2 relative overflow-hidden">
@@ -106,6 +124,18 @@ const FutureCreationForm: React.FC = () => {
             </p>
           </div>
         </div>
+
+        {/* Validation Messages */}
+        {validation && !validation.isValid && (
+          <div className="mb-4">
+            <ValidationMessage
+              type="error"
+              title="Étape incomplète"
+              messages={validation.errorMessages}
+              className="mb-3"
+            />
+          </div>
+        )}
 
         {/* Section content */}
         <div className="transition-all duration-300 transform">
@@ -127,359 +157,40 @@ const FutureCreationForm: React.FC = () => {
               )}
 
               {navigation.currentStep === 1 && (
-                <div className="space-y-3">
-                  {/* Deposit Type Selection */}
-                  <div className="flex justify-center space-x-2 my-2">
-                    <button
-                      type="button"
-                      onClick={() => handleDepositTypeChange('AMOUNT')}
-                      className={`px-3 py-2 rounded-lg font-medium transition-all duration-300 transform
-                        ${form.depositType === 'AMOUNT' 
-                          ? 'bg-teal-600 text-white scale-105 shadow-lg' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                    >
-                      Montant fixe
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDepositTypeChange('RATE')}
-                      className={`px-3 py-2 rounded-lg font-medium transition-all duration-300 transform
-                        ${form.depositType === 'RATE' 
-                          ? 'bg-teal-600 text-white scale-105 shadow-lg' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                    >
-                      Pourcentage
-                    </button>
-                  </div>
-
-                  {/* Financial Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Lot Size */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Taille de lot <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        value={form.lotSize}
-                        onChange={(e) => handleLotSizeChange(parseFloat(e.target.value) || 0)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                        required
-                      />
-                      {errors.lotSize && (
-                        <p className="text-red-500 text-xs mt-1">{errors.lotSize}</p>
-                      )}
-                    </div>
-
-                    {/* Deposit Type */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Type de dépôt <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        value={form.depositType}
-                        onChange={(e) => handleDepositTypeChange(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                        required
-                      >
-                        <option value="">Sélectionnez le type de dépôt</option>
-                        {api.depositTypes.map(type => (
-                          <option key={type} value={type}>{type}</option>
-                        ))}
-                      </select>
-                      {errors.depositType && (
-                        <p className="text-red-500 text-xs mt-1">{errors.depositType}</p>
-                      )}
-                    </div>
-
-                    {/* Initial Margin Amount */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Montant de la marge initiale
-                        {form.depositType && form.depositType !== 'AMOUNT' && (
-                          <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                            Calculé automatiquement
-                          </span>
-                        )}
-                      </label>
-                      <input
-                        type="text"
-                        value={stringInputs.initialMarginAmount}
-                        onChange={(e) => handleInitialMarginAmountChange(e.target.value)}
-                        readOnly={Boolean(form.depositType && form.depositType !== 'AMOUNT')}
-                        className={`w-full px-4 py-2 border rounded-lg transition-all duration-200 ${
-                          form.depositType && form.depositType !== 'AMOUNT'
-                            ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
-                            : 'border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent hover:border-gray-400'
-                        }`}
-                      />
-                    </div>
-
-                    {/* Percentage Margin */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Pourcentage de marge
-                        {form.depositType && form.depositType !== 'RATE' && (
-                          <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                            Calculé automatiquement
-                          </span>
-                        )}
-                      </label>
-                      <input
-                        type="text"
-                        value={stringInputs.percentageMargin}
-                        onChange={(e) => handlePercentageMarginChange(e.target.value)}
-                        readOnly={Boolean(form.depositType && form.depositType !== 'RATE')}
-                        className={`w-full px-4 py-2 border rounded-lg transition duration-200 ${
-                          form.depositType && form.depositType !== 'RATE'
-                            ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
-                            : 'border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent'
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Underlying Assets */}
-                  <div className="bg-white rounded-lg shadow p-3 border border-gray-100 hover:shadow-lg transition-all duration-200">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-700">
-                          Type du sous-jacent <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          value={form.underlyingType}
-                          onChange={(e) => handleUnderlyingTypeChange(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                          required
-                        >
-                          <option value="">Sélectionnez le type du sous-jacent</option>
-                          {api.underlyingTypes.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                          ))}
-                        </select>
-                        {errors.underlyingType && (
-                          <p className="text-red-500 text-xs mt-1">{errors.underlyingType}</p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-700">
-                          Sous-jacent <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          value={form.underlyingId}
-                          onChange={(e) => updateField('underlyingId', parseInt(e.target.value) || 0)}
-                          disabled={!form.underlyingType}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                          required
-                        >
-                          <option value={0}>Sélectionnez le sous-jacent</option>
-                          {api.underlyingAssets.map(asset => (
-                            <option key={asset.id} value={asset.id}>{asset.identifier}</option>
-                          ))}
-                        </select>
-                        {errors.underlyingId && (
-                          <p className="text-red-500 text-xs mt-1">{errors.underlyingId}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <DepositSection
+                  form={form}
+                  errors={errors}
+                  stringInputs={stringInputs}
+                  api={{
+                    depositTypes: api.depositTypes,
+                    underlyingTypes: api.underlyingTypes,
+                    underlyingAssets: api.underlyingAssets,
+                  }}
+                  onDepositTypeChange={handleDepositTypeChange}
+                  onLotSizeChange={handleLotSizeChange}
+                  onPercentageMarginChange={handlePercentageMarginChange}
+                  onInitialMarginAmountChange={handleInitialMarginAmountChange}
+                  onUnderlyingTypeChange={handleUnderlyingTypeChange}
+                  onUnderlyingIdChange={(value) => updateField('underlyingId', value)}
+                />
               )}
 
               {navigation.currentStep === 2 && (
-                <div className="space-y-3">
-                  {/* Tick Configuration */}
-                  <div className="bg-gradient-to-r from-teal-50 to-white p-3 rounded-lg space-y-3">
-                    <div className="flex items-end space-x-4 mb-2">
-                      <div className="flex-0">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Tick Size
-                        </label>
-                        <input
-                          type="text"
-                          value={stringInputs.tickSize}
-                          onChange={(e) => handleTickSizeChange(e.target.value)}
-                          className="w-32 px-4 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-teal-500 focus:border-transparent hover:border-gray-400"
-                          placeholder="Ex: 0.01"
-                        />
-                        {errors.tickSize && (
-                          <p className="text-red-500 text-xs mt-1">{errors.tickSize}</p>
-                        )}
-                      </div>
-                      
-                      {/* Edit Mode Buttons */}
-                      <div className="flex space-x-2">
-                        <button
-                          type="button"
-                          onClick={() => changeEditMode('tickValue')}
-                          className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 transform
-                            ${editMode === 'tickValue' 
-                              ? 'bg-teal-600 text-white scale-105 shadow-lg' 
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                        >
-                          Saisir Tick Value
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => changeEditMode('contractMultiplier')}
-                          className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 transform
-                            ${editMode === 'contractMultiplier' 
-                              ? 'bg-teal-600 text-white scale-105 shadow-lg' 
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                        >
-                          Saisir Multiplicateur
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Tick Value and Contract Multiplier */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="flex items-center text-sm font-medium text-gray-700">
-                          Tick Value
-                          {editMode !== 'tickValue' && (
-                            <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
-                              Calculé automatiquement
-                            </span>
-                          )}
-                        </label>
-                        <input
-                          type="number"
-                          value={editMode === 'tickValue' ? localInputs.tickValue : form.tickValue}
-                          onChange={(e) => handleTickValueChange(parseFloat(e.target.value) || 0)}
-                          readOnly={editMode !== 'tickValue'}
-                          className={`w-full px-4 py-2 border rounded-lg transition-all duration-200
-                            ${editMode !== 'tickValue'
-                              ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
-                              : 'border-gray-300 focus:ring-2 focus:ring-teal-500 hover:border-gray-400'
-                            }`}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="flex items-center text-sm font-medium text-gray-700">
-                          Multiplicateur
-                          {editMode !== 'contractMultiplier' && (
-                            <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
-                              Calculé automatiquement
-                            </span>
-                          )}
-                        </label>
-                        <input
-                          type="number"
-                          value={editMode === 'contractMultiplier' ? localInputs.contractMultiplier : form.contractMultiplier}
-                          onChange={(e) => handleContractMultiplierChange(parseFloat(e.target.value) || 0)}
-                          readOnly={editMode !== 'contractMultiplier'}
-                          className={`w-full px-4 py-2 border rounded-lg transition-all duration-200
-                            ${editMode !== 'contractMultiplier'
-                              ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
-                              : 'border-gray-300 focus:ring-2 focus:ring-teal-500 hover:border-gray-400'
-                            }`}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Trading Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Date de première négociation <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={form.firstTradingDate}
-                        onChange={(e) => updateField('firstTradingDate', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                        required
-                      />
-                      {errors.firstTradingDate && (
-                        <p className="text-red-500 text-xs mt-1">{errors.firstTradingDate}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Date de dernière négociation <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={form.lastTraadingDate}
-                        onChange={(e) => updateField('lastTraadingDate', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                        required
-                      />
-                      {errors.lastTraadingDate && (
-                        <p className="text-red-500 text-xs mt-1">{errors.lastTraadingDate}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Devise de négociation <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        value={form.tradingCurrency}
-                        onChange={(e) => updateField('tradingCurrency', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                        required
-                      />
-                      {errors.tradingCurrency && (
-                        <p className="text-red-500 text-xs mt-1">{errors.tradingCurrency}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Mode de livraison <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        value={form.settlementMethod}
-                        onChange={(e) => updateField('settlementMethod', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                        required
-                      >
-                        <option value="">Sélectionnez la méthode de règlement</option>
-                        {api.settlementMethods.map(method => (
-                          <option key={method} value={method}>{method}</option>
-                        ))}
-                      </select>
-                      {errors.settlementMethod && (
-                        <p className="text-red-500 text-xs mt-1">{errors.settlementMethod}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Cotation <span className="text-red-500">*</span>
-                      </label>
-                      <div className="flex space-x-2">
-                        <button
-                          type="button"
-                          onClick={() => updateField('instrumentStatus', true)}
-                          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
-                            form.instrumentStatus 
-                              ? 'bg-green-600 text-white shadow-lg' 
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
-                          Côté
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateField('instrumentStatus', false)}
-                          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
-                            !form.instrumentStatus 
-                              ? 'bg-red-600 text-white shadow-lg' 
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                        >
-                          Non côté
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <TradingSection
+                  form={form}
+                  errors={errors}
+                  editMode={editMode}
+                  stringInputs={stringInputs}
+                  localInputs={localInputs}
+                  api={{
+                    settlementMethods: api.settlementMethods,
+                  }}
+                  onTickSizeChange={handleTickSizeChange}
+                  onTickValueChange={handleTickValueChange}
+                  onContractMultiplierChange={handleContractMultiplierChange}
+                  onChangeEditMode={changeEditMode}
+                  onFieldChange={updateField}
+                />
               )}
             </motion.div>
           </AnimatePresence>
@@ -487,6 +198,9 @@ const FutureCreationForm: React.FC = () => {
       </div>
     );
   };
+
+  // Get form completion status
+  const completionStatus = navigation.getFormCompletionStatus();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white py-2">
@@ -497,6 +211,20 @@ const FutureCreationForm: React.FC = () => {
           <p className="mt-1 text-xs text-gray-600">
             Remplissez les informations nécessaires pour créer un nouveau Future
           </p>
+          
+          {/* Form completion indicator */}
+          <div className="mt-2 flex items-center justify-center space-x-2">
+            <div className="text-xs text-gray-600">
+              Progression: {completionStatus.completed}/{completionStatus.total} champs requis
+            </div>
+            <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-teal-600 transition-all duration-300"
+                style={{ width: `${completionStatus.percentage}%` }}
+              />
+            </div>
+            <span className="text-xs text-gray-600">{completionStatus.percentage}%</span>
+          </div>
         </div>
 
         {/* Stepper */}
@@ -505,6 +233,7 @@ const FutureCreationForm: React.FC = () => {
           currentStep={navigation.currentStep}
           completedSteps={navigation.completedSteps}
           onStepClick={handleStepClick}
+          getStepValidation={navigation.getStepValidation}
         />
 
         {/* Form Content */}
@@ -540,9 +269,13 @@ const FutureCreationForm: React.FC = () => {
           ) : (
             <button
               type="button"
-              onClick={() => navigation.nextStep()}
-              className="px-6 py-3 bg-teal-600 text-white rounded-lg font-medium
-                       hover:bg-teal-700 transition-all duration-200"
+              onClick={handleNextStep}
+              disabled={!navigation.getCurrentStepValidation().canProceed}
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                navigation.getCurrentStepValidation().canProceed
+                  ? 'bg-teal-600 text-white hover:bg-teal-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
               Suivant →
             </button>
