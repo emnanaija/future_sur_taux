@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Info, DollarSign, Calendar } from 'lucide-react';
+import { Info, DollarSign, Calendar,ClipboardCheck } from 'lucide-react';
 
 // Hooks
 import { useFutureForm } from './hooks/useFutureForm';
@@ -86,7 +86,7 @@ const FutureCreationForm: React.FC = () => {
 
     const sectionIcon = {
       identification: <Info className="w-5 h-5" />,
-      deposit: <DollarSign className="w-5 h-5" />,
+      deposit: <ClipboardCheck  className="w-5 h-5" />,
       trading: <Calendar className="w-5 h-5" />,
     }[currentSection.id] || <Info className="w-5 h-5" />;
 
