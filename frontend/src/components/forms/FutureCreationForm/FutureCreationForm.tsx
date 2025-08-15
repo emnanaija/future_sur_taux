@@ -199,6 +199,9 @@ const FutureCreationForm: React.FC = () => {
     );
   };
 
+  // Get form completion status
+  const completionStatus = navigation.getFormCompletionStatus();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white py-2">
       <div className="max-w-4xl mx-auto px-2">
@@ -208,6 +211,20 @@ const FutureCreationForm: React.FC = () => {
           <p className="mt-1 text-xs text-gray-600">
             Remplissez les informations nécessaires pour créer un nouveau Future
           </p>
+          
+          {/* Form completion indicator */}
+          <div className="mt-2 flex items-center justify-center space-x-2">
+            <div className="text-xs text-gray-600">
+              Progression: {completionStatus.completed}/{completionStatus.total} champs requis
+            </div>
+            <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-teal-600 transition-all duration-300"
+                style={{ width: `${completionStatus.percentage}%` }}
+              />
+            </div>
+            <span className="text-xs text-gray-600">{completionStatus.percentage}%</span>
+          </div>
         </div>
 
         {/* Stepper */}

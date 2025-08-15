@@ -1,5 +1,6 @@
 import React from 'react';
 import { FutureFormData } from '../schemas/futureFormSchema';
+import { FormField } from '../common/FormField';
 
 interface DepositSectionProps {
   form: FutureFormData;
@@ -62,10 +63,13 @@ export const DepositSection: React.FC<DepositSectionProps> = ({
       {/* Financial Fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Lot Size */}
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">
-            Taille de lot <span className="text-red-500">*</span>
-          </label>
+        <FormField
+          label="Taille de lot"
+          name="lotSize"
+          required
+          error={errors.lotSize}
+          tooltip="Nombre d'unités par contrat"
+        >
           <input
             type="number"
             value={form.lotSize}
@@ -73,16 +77,16 @@ export const DepositSection: React.FC<DepositSectionProps> = ({
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
             required
           />
-          {errors.lotSize && (
-            <p className="text-red-500 text-xs mt-1">{errors.lotSize}</p>
-          )}
-        </div>
+        </FormField>
 
         {/* Deposit Type */}
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">
-            Type de dépôt <span className="text-red-500">*</span>
-          </label>
+        <FormField
+          label="Type de dépôt"
+          name="depositType"
+          required
+          error={errors.depositType}
+          tooltip="Type de dépôt requis pour le trading"
+        >
           <select
             value={form.depositType}
             onChange={(e) => onDepositTypeChange(e.target.value)}
@@ -94,65 +98,71 @@ export const DepositSection: React.FC<DepositSectionProps> = ({
               <option key={type} value={type}>{type}</option>
             ))}
           </select>
-          {errors.depositType && (
-            <p className="text-red-500 text-xs mt-1">{errors.depositType}</p>
-          )}
-        </div>
+        </FormField>
 
         {/* Initial Margin Amount */}
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">
-            Montant de la marge initiale
+        <FormField
+          label="Montant de la marge initiale"
+          name="initialMarginAmount"
+          tooltip="Montant de marge requis pour ouvrir une position"
+        >
+          <div className="space-y-2">
             {form.depositType && form.depositType !== 'AMOUNT' && (
-              <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
                 Calculé automatiquement
               </span>
             )}
-          </label>
-          <input
-            type="text"
-            value={stringInputs.initialMarginAmount}
-            onChange={(e) => onInitialMarginAmountChange(e.target.value)}
-            readOnly={Boolean(form.depositType && form.depositType !== 'AMOUNT')}
-            className={`w-full px-4 py-2 border rounded-lg transition-all duration-200 ${
-              form.depositType && form.depositType !== 'AMOUNT'
-                ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
-                : 'border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent hover:border-gray-400'
-            }`}
-          />
-        </div>
+            <input
+              type="text"
+              value={stringInputs.initialMarginAmount}
+              onChange={(e) => onInitialMarginAmountChange(e.target.value)}
+              readOnly={Boolean(form.depositType && form.depositType !== 'AMOUNT')}
+              className={`w-full px-4 py-2 border rounded-lg transition-all duration-200 ${
+                form.depositType && form.depositType !== 'AMOUNT'
+                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                  : 'border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent hover:border-gray-400'
+              }`}
+            />
+          </div>
+        </FormField>
 
         {/* Percentage Margin */}
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">
-            Pourcentage de marge
+        <FormField
+          label="Pourcentage de marge"
+          name="percentageMargin"
+          tooltip="Pourcentage de marge par rapport à la valeur du contrat"
+        >
+          <div className="space-y-2">
             {form.depositType && form.depositType !== 'RATE' && (
-              <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
                 Calculé automatiquement
               </span>
             )}
-          </label>
-          <input
-            type="text"
-            value={stringInputs.percentageMargin}
-            onChange={(e) => onPercentageMarginChange(e.target.value)}
-            readOnly={Boolean(form.depositType && form.depositType !== 'RATE')}
-            className={`w-full px-4 py-2 border rounded-lg transition duration-200 ${
-              form.depositType && form.depositType !== 'RATE'
-                ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
-                : 'border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent'
-            }`}
-          />
-        </div>
+            <input
+              type="text"
+              value={stringInputs.percentageMargin}
+              onChange={(e) => onPercentageMarginChange(e.target.value)}
+              readOnly={Boolean(form.depositType && form.depositType !== 'RATE')}
+              className={`w-full px-4 py-2 border rounded-lg transition duration-200 ${
+                form.depositType && form.depositType !== 'RATE'
+                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                  : 'border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent'
+              }`}
+            />
+          </div>
+        </FormField>
       </div>
 
       {/* Underlying Assets */}
       <div className="bg-white rounded-lg shadow p-3 border border-gray-100 hover:shadow-lg transition-all duration-200">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Type du sous-jacent <span className="text-red-500">*</span>
-            </label>
+          <FormField
+            label="Type du sous-jacent"
+            name="underlyingType"
+            required
+            error={errors.underlyingType}
+            tooltip="Type d'actif sous-jacent au contrat"
+          >
             <select
               value={form.underlyingType}
               onChange={(e) => onUnderlyingTypeChange(e.target.value)}
@@ -164,14 +174,15 @@ export const DepositSection: React.FC<DepositSectionProps> = ({
                 <option key={type} value={type}>{type}</option>
               ))}
             </select>
-            {errors.underlyingType && (
-              <p className="text-red-500 text-xs mt-1">{errors.underlyingType}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">
-              Sous-jacent <span className="text-red-500">*</span>
-            </label>
+          </FormField>
+          
+          <FormField
+            label="Sous-jacent"
+            name="underlyingId"
+            required
+            error={errors.underlyingId}
+            tooltip="Actif spécifique sous-jacent au contrat"
+          >
             <select
               value={form.underlyingId}
               onChange={(e) => onUnderlyingIdChange(parseInt(e.target.value) || 0)}
@@ -184,10 +195,7 @@ export const DepositSection: React.FC<DepositSectionProps> = ({
                 <option key={asset.id} value={asset.id}>{asset.identifier}</option>
               ))}
             </select>
-            {errors.underlyingId && (
-              <p className="text-red-500 text-xs mt-1">{errors.underlyingId}</p>
-            )}
-          </div>
+          </FormField>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { FutureFormData } from '../schemas/futureFormSchema';
+import { FormField } from '../common/FormField';
 import { Info } from 'lucide-react';
 
 interface TradingSectionProps {
@@ -42,19 +43,21 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
       <div className="bg-gradient-to-r from-teal-50 to-white p-3 rounded-lg space-y-3">
         <div className="flex items-end space-x-4 mb-2">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tick Size <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={stringInputs.tickSize}
-              onChange={(e) => onTickSizeChange(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-teal-500 focus:border-transparent hover:border-gray-400"
-              placeholder="Ex: 0.01"
-            />
-            {errors.tickSize && (
-              <p className="text-red-500 text-xs mt-1">{errors.tickSize}</p>
-            )}
+            <FormField
+              label="Tick Size"
+              name="tickSize"
+              required
+              error={errors.tickSize}
+              tooltip="Taille minimale de variation du prix"
+            >
+              <input
+                type="text"
+                value={stringInputs.tickSize}
+                onChange={(e) => onTickSizeChange(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-teal-500 focus:border-transparent hover:border-gray-400"
+                placeholder="Ex: 0.01"
+              />
+            </FormField>
           </div>
           
           {/* Edit Mode Buttons */}
@@ -84,70 +87,76 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
 
         {/* Tick Value and Contract Multiplier */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              Tick Value
-              {editMode !== 'tickValue' && (
-                <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
-                  Calculé automatiquement
-                </span>
-              )}
-              <div 
-                className="ml-2 text-teal-600 cursor-help"
-                title="Tick Value = Tick Size × Contract Multiplier"
-              >
-                <Info className="w-4 h-4" />
+          <FormField
+            label="Tick Value"
+            name="tickValue"
+            tooltip="Tick Value = Tick Size × Contract Multiplier"
+          >
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                {editMode !== 'tickValue' && (
+                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
+                    Calculé automatiquement
+                  </span>
+                )}
+                <div className="text-teal-600 cursor-help">
+                  <Info className="w-4 h-4" />
+                </div>
               </div>
-            </label>
-            <input
-              type="number"
-              value={editMode === 'tickValue' ? localInputs.tickValue : form.tickValue}
-              onChange={(e) => onTickValueChange(parseFloat(e.target.value) || 0)}
-              readOnly={editMode !== 'tickValue'}
-              className={`w-full px-4 py-2 border rounded-lg transition-all duration-200
-                ${editMode !== 'tickValue'
-                  ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
-                  : 'border-gray-300 focus:ring-2 focus:ring-teal-500 hover:border-gray-400'
-                }`}
-            />
-          </div>
+              <input
+                type="number"
+                value={editMode === 'tickValue' ? localInputs.tickValue : form.tickValue}
+                onChange={(e) => onTickValueChange(parseFloat(e.target.value) || 0)}
+                readOnly={editMode !== 'tickValue'}
+                className={`w-full px-4 py-2 border rounded-lg transition-all duration-200
+                  ${editMode !== 'tickValue'
+                    ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
+                    : 'border-gray-300 focus:ring-2 focus:ring-teal-500 hover:border-gray-400'
+                  }`}
+              />
+            </div>
+          </FormField>
           
-          <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              Contract Multiplier
-              {editMode !== 'contractMultiplier' && (
-                <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
-                  Calculé automatiquement
-                </span>
-              )}
-              <div 
-                className="ml-2 text-teal-600 cursor-help"
-                title="Contract Multiplier = Tick Value ÷ Tick Size"
-              >
-                <Info className="w-4 h-4" />
+          <FormField
+            label="Contract Multiplier"
+            name="contractMultiplier"
+            tooltip="Contract Multiplier = Tick Value ÷ Tick Size"
+          >
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                {editMode !== 'contractMultiplier' && (
+                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">
+                    Calculé automatiquement
+                  </span>
+                )}
+                <div className="text-teal-600 cursor-help">
+                  <Info className="w-4 h-4" />
+                </div>
               </div>
-            </label>
-            <input
-              type="number"
-              value={editMode === 'contractMultiplier' ? localInputs.contractMultiplier : form.contractMultiplier}
-              onChange={(e) => onContractMultiplierChange(parseFloat(e.target.value) || 0)}
-              readOnly={editMode !== 'contractMultiplier'}
-              className={`w-full px-4 py-2 border rounded-lg transition-all duration-200
-                ${editMode !== 'contractMultiplier'
-                  ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
-                  : 'border-gray-300 focus:ring-2 focus:ring-teal-500 hover:border-gray-400'
-                }`}
-            />
-          </div>
+              <input
+                type="number"
+                value={editMode === 'contractMultiplier' ? localInputs.contractMultiplier : form.contractMultiplier}
+                onChange={(e) => onContractMultiplierChange(parseFloat(e.target.value) || 0)}
+                readOnly={editMode !== 'contractMultiplier'}
+                className={`w-full px-4 py-2 border rounded-lg transition-all duration-200
+                  ${editMode !== 'contractMultiplier'
+                    ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
+                    : 'border-gray-300 focus:ring-2 focus:ring-teal-500 hover:border-gray-400'
+                  }`}
+              />
+            </div>
+          </FormField>
         </div>
       </div>
 
       {/* Trading Fields */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">
-            Date de première négociation <span className="text-red-500">*</span>
-          </label>
+        <FormField
+          label="Date de première négociation"
+          name="firstTradingDate"
+          required
+          error={errors.firstTradingDate}
+        >
           <input
             type="date"
             value={form.firstTradingDate}
@@ -155,15 +164,14 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
             required
           />
-          {errors.firstTradingDate && (
-            <p className="text-red-500 text-xs mt-1">{errors.firstTradingDate}</p>
-          )}
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">
-            Date de dernière négociation <span className="text-red-500">*</span>
-          </label>
+        <FormField
+          label="Date de dernière négociation"
+          name="lastTraadingDate"
+          required
+          error={errors.lastTraadingDate}
+        >
           <input
             type="date"
             value={form.lastTraadingDate}
@@ -171,30 +179,28 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
             required
           />
-          {errors.lastTraadingDate && (
-            <p className="text-red-500 text-xs mt-1">{errors.lastTraadingDate}</p>
-          )}
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">
-            Devise de négociation <span className="text-red-500">*</span>
-          </label>
+        <FormField
+          label="Devise de négociation"
+          name="tradingCurrency"
+          required
+          error={errors.tradingCurrency}
+        >
           <input
             value={form.tradingCurrency}
             onChange={(e) => onFieldChange('tradingCurrency', e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
             required
           />
-          {errors.tradingCurrency && (
-            <p className="text-red-500 text-xs mt-1">{errors.tradingCurrency}</p>
-          )}
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">
-            Mode de livraison <span className="text-red-500">*</span>
-          </label>
+        <FormField
+          label="Mode de livraison"
+          name="settlementMethod"
+          required
+          error={errors.settlementMethod}
+        >
           <select
             value={form.settlementMethod}
             onChange={(e) => onFieldChange('settlementMethod', e.target.value)}
@@ -206,15 +212,13 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
               <option key={method} value={method}>{method}</option>
             ))}
           </select>
-          {errors.settlementMethod && (
-            <p className="text-red-500 text-xs mt-1">{errors.settlementMethod}</p>
-          )}
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">
-            Cotation <span className="text-red-500">*</span>
-          </label>
+        <FormField
+          label="Cotation"
+          name="instrumentStatus"
+          required
+        >
           <div className="flex space-x-2">
             <button
               type="button"
@@ -239,7 +243,7 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
               Non côté
             </button>
           </div>
-        </div>
+        </FormField>
       </div>
     </div>
   );
