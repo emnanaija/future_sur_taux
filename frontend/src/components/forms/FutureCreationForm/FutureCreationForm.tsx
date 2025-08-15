@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Info, DollarSign, Calendar,ClipboardCheck } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 // Hooks
 import { useFutureForm } from './hooks/useFutureForm';
@@ -48,49 +49,149 @@ const FutureCreationForm: React.FC = () => {
   // Fetch underlying assets when underlying type changes
   useEffect(() => {
     if (form.underlyingType) {
-      api.fetchUnderlyingAssets(form.underlyingType);
+      // Show loading notification
+      const loadingToast = toast.loading('Chargement des actifs sous-jacents...', {
+        icon: '🔄',
+      });
+      
+      api.fetchUnderlyingAssets(form.underlyingType)
+        .then(() => {
+          toast.success('Actifs sous-jacents chargés avec succès', {
+            icon: '✅',
+            duration: 3000,
+          });
+        })
+        .catch((error) => {
+          toast.error('Erreur lors du chargement des actifs sous-jacents', {
+            icon: '❌',
+            duration: 5000,
+          });
+          console.error('Error fetching underlying assets:', error);
+        })
+        .finally(() => {
+          toast.dismiss(loadingToast);
+        });
     }
-  }, [form.underlyingType, api]);
+  }, [form.underlyingType]); // ✅ Supprimé 'api' des dépendances pour éviter la boucle infinie
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!navigation.isFormReadyForSubmission()) {
-      alert('Veuillez compléter toutes les étapes avant de soumettre');
+      toast.error('Veuillez compléter toutes les étapes avant de soumettre', {
+        icon: '⚠️',
+        duration: 5000,
+      });
       return;
     }
 
     if (!validateEntireForm()) {
-      alert('Veuillez corriger les erreurs avant de soumettre le formulaire');
+      toast.error('Veuillez corriger les erreurs avant de soumettre le formulaire', {
+        icon: '❌',
+        duration: 5000,
+      });
       return;
     }
 
     setSubmitting(true);
-    const result = await api.createFuture(form);
     
-    if (result.success) {
-      alert('Future créé avec succès');
-      // Optionally reset form or redirect
-    } else {
-      alert(`Erreur: ${result.error}`);
+    try {
+      const result = await api.createFuture(form);
+      
+      if (result.success) {
+        toast.success('Future créé avec succès ! 🎉', {
+          icon: '✅',
+          duration: 6000,
+        });
+        // Optionally reset form or redirect
+      } else {
+        toast.error(`Erreur lors de la création: ${result.error}`, {
+          icon: '',
+          duration: 8000,
+        });
+      }
+    } catch (error) {
+      toast.error('Erreur réseau. Veuillez réessayer.', {
+        icon: '',
+        duration: 8000,
+      });
+    } finally {
+      setSubmitting(false);
     }
-    
-    setSubmitting(false);
   };
 
   // Handle step navigation
   const handleStepClick = (stepIndex: number) => {
-    navigation.goToStep(stepIndex);
+    const currentStep = navigation.currentStep;
+    const result = navigation.goToStep(stepIndex);
+    
+    if (result) {
+      if (stepIndex > currentStep) {
+        // Moving forward
+        toast.success(`Navigation vers l'étape ${stepIndex + 1}`, {
+          icon: '➡️',
+          duration: 2000,
+        });
+      } else if (stepIndex < currentStep) {
+        // Moving backward
+        toast(`Retour à l'étape ${stepIndex + 1}`, {
+          icon: '⬅️',
+          duration: 2000,
+          style: {
+            background: '#3B82F6',
+            color: '#fff',
+          },
+        });
+      }
+    } else {
+      // Cannot navigate to this step
+      toast.error('Impossible de naviguer vers cette étape', {
+        icon: '🚫',
+        duration: 3000,
+      });
+    }
   };
 
   // Handle next step with validation
   const handleNextStep = () => {
     const validation = navigation.getCurrentStepValidation();
     if (!validation.canProceed) {
-      // Show validation message
+      // Show detailed validation message
+      if (validation.missingFields.length > 0) {
+        toast.error(
+          `Étape incomplète : ${validation.missingFields.length} champ(s) requis manquant(s)`, 
+          {
+            icon: '⚠️',
+            duration: 5000,
+          }
+        );
+      } else if (validation.errorMessages.length > 0) {
+        toast.error(
+          `Erreurs de validation : ${validation.errorMessages[0]}`, 
+          {
+            icon: '❌',
+            duration: 5000,
+          }
+        );
+      } else {
+        toast.error('Veuillez compléter cette étape avant de continuer', {
+          icon: '⚠️',
+          duration: 5000,
+        });
+      }
       return;
     }
+    
+    // Success notification when moving to next step
+    const nextStepIndex = navigation.currentStep + 1;
+    if (nextStepIndex < navigation.totalSteps) {
+      toast.success(`Étape ${nextStepIndex + 1} : ${navigation.sections[nextStepIndex].title}`, {
+        icon: '✅',
+        duration: 3000,
+      });
+    }
+    
     navigation.nextStep();
   };
 
