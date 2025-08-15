@@ -267,11 +267,6 @@ export const useFormNavigation = (form: FutureFormData, errors: Record<string, s
     return validateCurrentStep().canProceed;
   }, [currentStep, completedSteps, validateCurrentStep]);
 
-  // Get progress percentage
-  const getProgressPercentage = useCallback((): number => {
-    return ((currentStep + 1) / FORM_SECTIONS.length) * 100;
-  }, [currentStep]);
-
   // Get current section
   const getCurrentSection = useCallback((): FormSection | undefined => {
     return FORM_SECTIONS[currentStep];
@@ -282,32 +277,7 @@ export const useFormNavigation = (form: FutureFormData, errors: Record<string, s
     return FORM_SECTIONS[index];
   }, []);
 
-  // Get overall form completion status
-  const getFormCompletionStatus = useCallback(() => {
-    const totalRequiredFields = FORM_SECTIONS.reduce((total, section) => total + section.requiredFields.length, 0);
-    let completedRequiredFields = 0;
 
-    FORM_SECTIONS.forEach(section => {
-      section.requiredFields.forEach(field => {
-        const value = form[field];
-        if (typeof value === 'string' && value.trim() !== '') {
-          completedRequiredFields++;
-        } else if (typeof value === 'number' && value > 0) {
-          completedRequiredFields++;
-        } else if (typeof value === 'boolean') {
-          completedRequiredFields++;
-        } else if (value !== undefined && value !== null) {
-          completedRequiredFields++;
-        }
-      });
-    });
-
-    return {
-      completed: completedRequiredFields,
-      total: totalRequiredFields,
-      percentage: Math.round((completedRequiredFields / totalRequiredFields) * 100)
-    };
-  }, [form]);
 
   return {
     // State
@@ -325,12 +295,10 @@ export const useFormNavigation = (form: FutureFormData, errors: Record<string, s
     validateCurrentStep,
     hasStepErrors,
     isFormReadyForSubmission,
-    getProgressPercentage,
     getCurrentSection,
     getSection,
     getCurrentStepValidation,
     getStepValidation,
-    getFormCompletionStatus,
     
     // Constants
     totalSteps: FORM_SECTIONS.length,
