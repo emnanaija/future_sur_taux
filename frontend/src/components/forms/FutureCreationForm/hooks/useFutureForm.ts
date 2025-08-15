@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FutureFormData, PartialFutureFormData, validateField, validateForm } from '../schemas/futureFormSchema';
+import { FutureFormData, PartialFutureFormData, validateField, validateForm, validateTradingDates } from '../schemas/futureFormSchema';
 import { FutureCalculationService } from '../services/futureCalculationService';
 
 interface FormState {
@@ -60,22 +60,67 @@ export const useFutureForm = () => {
     },
   });
 
-  // Update form field
+  // Update form field with real-time validation
   const updateField = useCallback((field: keyof FutureFormData, value: any) => {
-    setState(prev => ({
-      ...prev,
-      form: { ...prev.form, [field]: value },
-      errors: { ...prev.errors, [field]: '' } // Clear error when field is updated
-    }));
+    setState(prev => {
+      let error = '';
+      
+      // Validation de base du champ
+      const basicError = validateField(field, value);
+      if (basicError) {
+        error = basicError;
+      } else {
+        // Validation spéciale pour les dates de trading
+        if (field === 'firstTradingDate' && prev.form.lastTraadingDate) {
+          const dateError = validateTradingDates(value, prev.form.lastTraadingDate);
+          if (dateError) error = dateError;
+        }
+        
+        if (field === 'lastTraadingDate' && prev.form.firstTradingDate) {
+          const dateError = validateTradingDates(prev.form.firstTradingDate, value);
+          if (dateError) error = dateError;
+        }
+      }
+      
+      return {
+        ...prev,
+        form: { ...prev.form, [field]: value },
+        errors: { ...prev.errors, [field]: error }
+      };
+    });
   }, []);
 
-  // Update multiple fields at once
+  // Update multiple fields at once with validation
   const updateFields = useCallback((updates: PartialFutureFormData) => {
-    setState(prev => ({
-      ...prev,
-      form: { ...prev.form, ...updates },
-      errors: { ...prev.errors, ...Object.keys(updates).reduce((acc, key) => ({ ...acc, [key]: '' }), {}) }
-    }));
+    setState(prev => {
+      const newForm = { ...prev.form, ...updates };
+      const newErrors = { ...prev.errors };
+      
+      // Clear errors for updated fields
+      Object.keys(updates).forEach(key => {
+        newErrors[key] = '';
+      });
+      
+      // Special validation for trading dates
+      if (updates.firstTradingDate || updates.lastTraadingDate) {
+        const firstDate = updates.firstTradingDate || prev.form.firstTradingDate;
+        const lastDate = updates.lastTraadingDate || prev.form.lastTraadingDate;
+        
+        if (firstDate && lastDate) {
+          const dateError = validateTradingDates(firstDate, lastDate);
+          if (dateError) {
+            // Show error on the lastTraadingDate field as per schema
+            newErrors.lastTraadingDate = dateError;
+          }
+        }
+      }
+      
+      return {
+        ...prev,
+        form: newForm,
+        errors: newErrors
+      };
+    });
   }, []);
 
   // Update string inputs (for controlled inputs)
@@ -97,6 +142,23 @@ export const useFutureForm = () => {
   // Change edit mode
   const changeEditMode = useCallback((mode: 'tickValue' | 'contractMultiplier') => {
     setState(prev => ({ ...prev, editMode: mode }));
+  }, []);
+
+  // Validate trading dates specifically
+  const validateTradingDatesField = useCallback(() => {
+    setState(prev => {
+      if (prev.form.firstTradingDate && prev.form.lastTraadingDate) {
+        const dateError = validateTradingDates(prev.form.firstTradingDate, prev.form.lastTraadingDate);
+        return {
+          ...prev,
+          errors: { 
+            ...prev.errors, 
+            lastTraadingDate: dateError || '' 
+          }
+        };
+      }
+      return prev;
+    });
   }, []);
 
   // Validate single field
@@ -271,6 +333,7 @@ export const useFutureForm = () => {
     changeEditMode,
     validateSingleField,
     validateEntireForm,
+    validateTradingDatesField, // ✅ Nouvelle fonction de validation des dates
     handleTickSizeChange,
     handleTickValueChange,
     handleContractMultiplierChange,

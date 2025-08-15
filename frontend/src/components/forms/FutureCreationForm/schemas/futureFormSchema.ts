@@ -31,6 +31,17 @@ export const futureFormSchema = z.object({
   underlyingType: z.string().min(1, 'Le type de sous-jacent est requis'),
   underlyingId: z.number().positive('Le sous-jacent est requis'),
   depositType: z.string().min(1, 'Le type de dépôt est requis'),
+}).refine((data) => {
+  // Validation personnalisée : date début < date fin
+  if (data.firstTradingDate && data.lastTraadingDate) {
+    const startDate = new Date(data.firstTradingDate);
+    const endDate = new Date(data.lastTraadingDate);
+    return startDate < endDate;
+  }
+  return true; // Si une des dates n'est pas encore saisie, on ne valide pas
+}, {
+  message: "La date de début de négociation doit être antérieure à la date de fin de négociation",
+  path: ["lastTraadingDate"], // L'erreur sera affichée sur le champ date de fin
 });
 
 // Type inference from the schema
@@ -63,4 +74,20 @@ export const validateForm = (data: FutureFormData): Record<string, string> => {
     });
     return errors;
   }
+};
+
+// Validation spécifique pour les dates de trading
+export const validateTradingDates = (firstDate: string, lastDate: string): string | null => {
+  if (!firstDate || !lastDate) {
+    return null; // Pas d'erreur si une des dates n'est pas encore saisie
+  }
+  
+  const startDate = new Date(firstDate);
+  const endDate = new Date(lastDate);
+  
+  if (startDate >= endDate) {
+    return "La date de début de négociation doit être antérieure à la date de fin de négociation";
+  }
+  
+  return null;
 };

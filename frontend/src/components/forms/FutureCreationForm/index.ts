@@ -8,7 +8,7 @@ export {
 
 // Types and schemas
 export type { FutureFormData, PartialFutureFormData } from './schemas/futureFormSchema';
-export { futureFormSchema, validateField, validateForm } from './schemas/futureFormSchema';
+export { futureFormSchema, validateField, validateForm, validateTradingDates } from './schemas/futureFormSchema';
 
 // Hooks
 export { useFutureForm } from './hooks/useFutureForm';
