@@ -4,97 +4,91 @@ import com.example.future_sur_taux.domain.enumeration.CollateralMethod;
 import com.example.future_sur_taux.domain.enumeration.DepositType;
 import com.example.future_sur_taux.domain.enumeration.SettlementMethod;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
-
+import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Data
+@Entity
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-//@Table(name = "future", schema = CurrentTenantResolver.DEFAULT_SCHEMA)
-@Table(name = "future")
+@Builder
+public class Future {
 
-//@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-@SuppressWarnings("squid:S2160")
-@EqualsAndHashCode(callSuper = false)
-public class Future extends Asset  {
+ @Id
+ @GeneratedValue(strategy = GenerationType.IDENTITY)
+ private Long id;
 
+ // 🔹 Informations générales
+ private String symbol;
+ private String description;
+ private String isin;
+ private String expirationCode;
+ private String parentTicker;
+ private String fullName;
+ private String segment;
 
-   /* @Id
-    private Long id;
-*/
-    private String symbol;
-    private Boolean instrumentStatus;
-   private String loadId;
-    private String fullName;
-    private String tradingParameter;
-    private LocalDate lastTraadingDate;
-    private String segment;
-    private String calendarId;
-    private Boolean flagForDelete;
-    private String md5MulticastChannelId;
-    private String tradingCurrency;
-    private String activeLoadId;
-    private String secMD5MulticastChannelId;
-    private String secondaryLoadId;
-    private LocalDate expiryDate;
-    private String internalLoadId;
-    private String marketDataChannelId;
-    private String referencePriceTable;
-    private String referencePrice;
-    private Boolean blueMonth;
+ // 🔹 Dates clés
+ private LocalDate firstTradingDate;
+ private LocalDate lastTradingDate;   // ✅ correction typo
+ private LocalDate maturityDate;
+ private LocalDate expiryDate;
 
-    @Enumerated(EnumType.STRING)
-    private SettlementMethod settlementMethod;
+ // 🔹 Données de marché
+ private Double tickSize;
+ private Double tickValue;
+ private String tradingCurrency;
+ private Integer lotSize;
+ private Integer contractMultiplier;
 
-    private LocalDate firstTradingDate;
-    private LocalDate deletionDate;
-    private String parentTicker;
-    private String cfiCode;
-    private String mobType;
-    private String postTradeParameter;
-    private LocalDate settlementDate;
-    private LocalDate maturityDate;
-    private Double issuedQty;
-    private LocalDate orderDeletionDate;
-    private Integer lotSize;//contract size
-    private String expirationCode;
+ // 🔹 Liens et méthodes
+ @ManyToOne(fetch = FetchType.LAZY)
+ @JoinColumn(name = "underlying_id")
+ private Underlying underlying;
 
-    // Multiplicateur du contrat (contract size)
-    private Integer contractMultiplier;
+ @Enumerated(EnumType.STRING)
+ private SettlementMethod settlementMethod;
 
-    // Tick size (la plus petite variation de prix possible)
-    private Double tickSize;
+ @Enumerated(EnumType.STRING)
+ private CollateralMethod collateralMethod;
 
-    // Tick value (valeur monétaire d’une variation d’un tick)
-    private Double tickValue;
+ @Enumerated(EnumType.STRING)
+ private DepositType depositType;
 
-    @Column(name = "percentage_margin", precision = 5, scale = 2)
-    private BigDecimal percentageMargin;
+ // 🔹 Données calculées
+ @Column(precision = 5, scale = 2)
+ private BigDecimal percentageMargin;
+ @Column(precision = 15, scale = 6)
+ private BigDecimal theoreticalPrice;    // Prix théorique du future
+ @Column(precision = 20, scale = 6)
+ private BigDecimal contractValue;       // Valeur totale du contrat
+ @Column(precision = 20, scale = 6)
+ private BigDecimal initialMarginAmount; // Montant de la marge initiale
 
-    @Column(name = "initial_margin_amount", precision = 15, scale = 2)
-    private BigDecimal initialMarginAmount;
+ // 🔹 États internes
+ private Boolean instrumentStatus;
+ private Boolean flagForDelete;
+ private BigDecimal issuedQty;
 
+ // 🔹 Métadonnées techniques
+ private String loadId;
+ private String activeLoadId;
+ private String secondaryLoadId;
+ private String internalLoadId;
+ private String md5MulticastChannelId;
+ private String secMD5MulticastChannelId;
+ private String marketDataChannelId;
+ private String referencePriceTable;
 
-    @Enumerated(EnumType.STRING)
-    private DepositType depositType;
+ private BigDecimal referencePrice;
+ private Boolean blueMonth;
+ private LocalDate settlementDate;
+ private LocalDate deletionDate;
+ private LocalDate orderDeletionDate;
 
-    @Enumerated(EnumType.STRING)
-    private CollateralMethod collateralMethod;
-
-    @OneToOne
-    private Underlying underlying;
-
-   /* @ManyToOne(fetch = FetchType.EAGER)
-    @JsonIgnoreProperties(value = "futures", allowSetters = true)
-    private ClearingHouse clearingHouse;
-
-*/
+ private String mobType;
+ private String postTradeParameter;
+ private String tradingParameter;
+ private String calendarId;
 }

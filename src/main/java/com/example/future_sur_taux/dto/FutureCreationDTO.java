@@ -9,11 +9,11 @@ import com.example.future_sur_taux.domain.enumeration.DepositType;
 @Data
 public class FutureCreationDTO {
 
-    // Champs Asset
+    // 🔹 Champs Asset
     private String symbol;
     private String description;
 
-    // Champs spécifiques Future
+    // 🔹 Champs spécifiques Future
     private String isin;
     private String expirationCode;
     private String parentTicker;
@@ -22,23 +22,23 @@ public class FutureCreationDTO {
 
     private LocalDate maturityDate;
     private LocalDate firstTradingDate;
-    private LocalDate lastTraadingDate;
+    private LocalDate lastTradingDate; // ✅ correction typo
 
-    private BigDecimal initialMarginAmount;
-    private BigDecimal percentageMargin;
-
+    // 🔹 Paramètres de trading
     private Integer lotSize;
     private Integer contractMultiplier;
-
     private String tradingCurrency;
 
-    private Long underlyingId;
-
-    private SettlementMethod settlementMethod;
-    private Boolean instrumentStatus;
-
+    // 🔹 Caractéristiques du marché
     private Double tickSize;
     private Double tickValue;
 
-    private DepositType depositType;  // ✅ Ajouté ici
+    // 🔹 Données de calcul
+    private BigDecimal percentageMargin;   // Pourcentage de marge (ex: 5%)
+    private Long underlyingId;              // ID du sous-jacent
+
+    // 🔹 Autres informations
+    private SettlementMethod settlementMethod;
+    private DepositType depositType;
+    private Boolean instrumentStatus;
 }
