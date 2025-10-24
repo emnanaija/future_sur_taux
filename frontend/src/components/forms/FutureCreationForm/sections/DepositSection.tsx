@@ -1,7 +1,7 @@
 import React from 'react';
 import { FutureFormData } from '../schemas/futureFormSchema';
 import { FormField } from '../common/FormField';
-import { DepositType, DEPOSIT_TYPE_LABELS } from '../../../../types/enums';
+import { DepositType } from '../../../../types/enums';
 
 interface DepositSectionProps {
   form: FutureFormData;
@@ -39,7 +39,7 @@ export const DepositSection: React.FC<DepositSectionProps> = ({
           <div className="flex items-center space-x-2">
             <input
               type="text"
-              value={form.depositType}
+              value={form.depositType === 'RATE' ? 'Pourcentage' : 'Montant fixe'}
               readOnly
               className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 cursor-not-allowed"
             />

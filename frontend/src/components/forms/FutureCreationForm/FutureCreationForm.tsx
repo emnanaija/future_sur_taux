@@ -20,7 +20,11 @@ import { ValidationMessage } from './common/ValidationMessage';
 // Types
 
 
-const FutureCreationForm: React.FC = () => {
+interface FutureCreationFormProps {
+  onSuccess?: () => void;
+}
+
+const FutureCreationForm: React.FC<FutureCreationFormProps> = ({ onSuccess }) => {
   // Use our custom hooks
   const {
     form,
@@ -107,7 +111,10 @@ const FutureCreationForm: React.FC = () => {
           icon: '✅',
           duration: 6000,
         });
-        // Optionally reset form or redirect
+        // Callback pour rediriger vers la liste
+        if (onSuccess) {
+          onSuccess();
+        }
       } else {
         console.error('Backend error details:', result.error);
         toast.error(`Erreur lors de la création: ${result.error}`, {
