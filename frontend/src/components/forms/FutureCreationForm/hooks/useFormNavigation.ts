@@ -28,12 +28,11 @@ export const FORM_SECTIONS: FormSection[] = [
     id: 'deposit',
     title: "Dépôt & sous-jacents",
     description: "Configuration des marges",
-    fields: ['depositType', 'lotSize', 'initialMarginAmount', 'percentageMargin', 'underlyingType', 'underlyingId'],
-    requiredFields: ['depositType', 'lotSize', 'underlyingType', 'underlyingId'],
+    fields: ['depositType', 'lotSize', 'percentageMargin', 'underlyingId'],
+    requiredFields: ['depositType', 'lotSize', 'underlyingId'],
     validationMessages: {
       depositType: 'Veuillez sélectionner le type de dépôt',
       lotSize: 'La taille de lot doit être supérieure à 0',
-      underlyingType: 'Veuillez sélectionner le type de sous-jacent',
       underlyingId: 'Veuillez sélectionner un sous-jacent'
     }
   },
@@ -41,11 +40,11 @@ export const FORM_SECTIONS: FormSection[] = [
     id: 'trading',
     title: "Négociation",
     description: "Paramètres de trading",
-    fields: ['firstTradingDate', 'lastTraadingDate', 'tradingCurrency', 'tickSize', 'settlementMethod', 'instrumentStatus'],
-    requiredFields: ['firstTradingDate', 'lastTraadingDate', 'tradingCurrency', 'tickSize', 'settlementMethod'],
+    fields: ['firstTradingDate', 'lastTradingDate', 'tradingCurrency', 'tickSize', 'settlementMethod', 'instrumentStatus'],
+    requiredFields: ['firstTradingDate', 'lastTradingDate', 'tradingCurrency', 'tickSize', 'settlementMethod'],
     validationMessages: {
       firstTradingDate: 'La date de première négociation est requise',
-      lastTraadingDate: 'La date de dernière négociation est requise',
+      lastTradingDate: 'La date de dernière négociation est requise',
       tradingCurrency: 'La devise de négociation est obligatoire',
       tickSize: 'Le tick size doit être supérieur à 0',
       settlementMethod: 'Veuillez sélectionner la méthode de règlement'

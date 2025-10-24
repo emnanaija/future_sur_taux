@@ -10,7 +10,6 @@ interface FormState {
   stringInputs: {
     tickSize: string;
     percentageMargin: string;
-    initialMarginAmount: string;
   };
   localInputs: {
     tickValue: number;
@@ -28,19 +27,17 @@ const initialFormData: FutureFormData = {
   segment: '',
   maturityDate: '',
   firstTradingDate: '',
-  lastTraadingDate: '',
-  initialMarginAmount: 0,
+  lastTradingDate: '',
   percentageMargin: 0,
   lotSize: 0,
   contractMultiplier: 0,
   tradingCurrency: '',
-  underlyingType: '',
   underlyingId: 0,
   settlementMethod: '',
   instrumentStatus: false,
   tickSize: 0,
   tickValue: 0,
-  depositType: '',
+  depositType: 'RATE',
 };
 
 export const useFutureForm = () => {
@@ -52,7 +49,6 @@ export const useFutureForm = () => {
     stringInputs: {
       tickSize: '',
       percentageMargin: '',
-      initialMarginAmount: '',
     },
     localInputs: {
       tickValue: 0,
@@ -71,12 +67,12 @@ export const useFutureForm = () => {
         error = basicError;
       } else {
         // Validation spéciale pour les dates de trading
-        if (field === 'firstTradingDate' && prev.form.lastTraadingDate) {
-          const dateError = validateTradingDates(value, prev.form.lastTraadingDate);
+        if (field === 'firstTradingDate' && prev.form.lastTradingDate) {
+          const dateError = validateTradingDates(value, prev.form.lastTradingDate);
           if (dateError) error = dateError;
         }
         
-        if (field === 'lastTraadingDate' && prev.form.firstTradingDate) {
+        if (field === 'lastTradingDate' && prev.form.firstTradingDate) {
           const dateError = validateTradingDates(prev.form.firstTradingDate, value);
           if (dateError) error = dateError;
         }
@@ -102,15 +98,15 @@ export const useFutureForm = () => {
       });
       
       // Special validation for trading dates
-      if (updates.firstTradingDate || updates.lastTraadingDate) {
+      if (updates.firstTradingDate || updates.lastTradingDate) {
         const firstDate = updates.firstTradingDate || prev.form.firstTradingDate;
-        const lastDate = updates.lastTraadingDate || prev.form.lastTraadingDate;
+        const lastDate = updates.lastTradingDate || prev.form.lastTradingDate;
         
         if (firstDate && lastDate) {
           const dateError = validateTradingDates(firstDate, lastDate);
           if (dateError) {
-            // Show error on the lastTraadingDate field as per schema
-            newErrors.lastTraadingDate = dateError;
+            // Show error on the lastTradingDate field as per schema
+            newErrors.lastTradingDate = dateError;
           }
         }
       }
@@ -147,13 +143,13 @@ export const useFutureForm = () => {
   // Validate trading dates specifically
   const validateTradingDatesField = useCallback(() => {
     setState(prev => {
-      if (prev.form.firstTradingDate && prev.form.lastTraadingDate) {
-        const dateError = validateTradingDates(prev.form.firstTradingDate, prev.form.lastTraadingDate);
+      if (prev.form.firstTradingDate && prev.form.lastTradingDate) {
+        const dateError = validateTradingDates(prev.form.firstTradingDate, prev.form.lastTradingDate);
         return {
           ...prev,
           errors: { 
             ...prev.errors, 
-            lastTraadingDate: dateError || '' 
+            lastTradingDate: dateError || '' 
           }
         };
       }
@@ -232,24 +228,8 @@ export const useFutureForm = () => {
     const percentageMargin = FutureCalculationService.parsePercentageMargin(value);
     
     if (percentageMargin > 0 && state.form.lotSize > 0) {
-      const initialMarginAmount = FutureCalculationService.calculateInitialMarginAmount(state.form.lotSize, percentageMargin);
       updateFields({
         percentageMargin,
-        initialMarginAmount
-      });
-    }
-  }, [state.form.lotSize, updateStringInput, updateFields]);
-
-  // Handle initial margin amount changes
-  const handleInitialMarginAmountChange = useCallback((value: string) => {
-    updateStringInput('initialMarginAmount', value);
-    const initialMarginAmount = FutureCalculationService.parseInitialMarginAmount(value);
-    
-    if (initialMarginAmount > 0 && state.form.lotSize > 0) {
-      const percentageMargin = FutureCalculationService.calculatePercentageMargin(state.form.lotSize, initialMarginAmount);
-      updateFields({
-        initialMarginAmount,
-        percentageMargin
       });
     }
   }, [state.form.lotSize, updateStringInput, updateFields]);
@@ -258,27 +238,12 @@ export const useFutureForm = () => {
   const handleLotSizeChange = useCallback((value: number) => {
     updateField('lotSize', value);
     
-    if (value > 0 && state.form.depositType) {
+    if (value > 0) {
       const calculations = FutureCalculationService.updateFormCalculations(state.form, state.form.depositType, value);
       updateFields(calculations);
     }
-  }, [state.form.depositType, updateField, updateFields]);
+  }, [state.form, updateField, updateFields]);
 
-  // Handle deposit type changes
-  const handleDepositTypeChange = useCallback((value: string) => {
-    updateField('depositType', value);
-    
-    if (value && state.form.lotSize > 0) {
-      const calculations = FutureCalculationService.updateFormCalculations(state.form, value, state.form.lotSize);
-      updateFields(calculations);
-    }
-  }, [state.form.lotSize, updateField, updateFields]);
-
-  // Handle underlying type changes
-  const handleUnderlyingTypeChange = useCallback((value: string) => {
-    updateField('underlyingType', value);
-    updateField('underlyingId', 0); // Reset underlying asset when type changes
-  }, [updateField]);
 
   // Set submitting state
   const setSubmitting = useCallback((isSubmitting: boolean) => {
@@ -295,7 +260,6 @@ export const useFutureForm = () => {
       stringInputs: {
         tickSize: '',
         percentageMargin: '',
-        initialMarginAmount: '',
       },
       localInputs: {
         tickValue: 0,
@@ -311,10 +275,9 @@ export const useFutureForm = () => {
       stringInputs: {
         tickSize: prev.form.tickSize > 0 ? prev.form.tickSize.toString() : '',
         percentageMargin: prev.form.percentageMargin > 0 ? prev.form.percentageMargin.toString() : '',
-        initialMarginAmount: prev.form.initialMarginAmount > 0 ? prev.form.initialMarginAmount.toString() : '',
       }
     }));
-  }, [state.form.tickSize, state.form.percentageMargin, state.form.initialMarginAmount]);
+  }, [state.form.tickSize, state.form.percentageMargin]);
 
   return {
     // State
@@ -338,10 +301,7 @@ export const useFutureForm = () => {
     handleTickValueChange,
     handleContractMultiplierChange,
     handlePercentageMarginChange,
-    handleInitialMarginAmountChange,
     handleLotSizeChange,
-    handleDepositTypeChange,
-    handleUnderlyingTypeChange,
     setSubmitting,
     resetForm,
   };

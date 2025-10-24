@@ -2,6 +2,7 @@ package com.example.future_sur_taux.controller;
 
 import com.example.future_sur_taux.domain.enumeration.DepositType;
 import com.example.future_sur_taux.domain.enumeration.SettlementMethod;
+import com.example.future_sur_taux.domain.enumeration.UnderlyingType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,5 +21,10 @@ public class EnumController {
     @GetMapping("/deposit-types")
     public DepositType[] getDepositTypes() {
         return DepositType.values();
+    }
+
+    @GetMapping("/underlying-types")
+    public UnderlyingType[] getUnderlyingTypes() {
+        return UnderlyingType.values();
     }
 }

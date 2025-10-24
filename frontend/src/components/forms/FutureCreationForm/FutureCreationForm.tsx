@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Info, DollarSign, Calendar,ClipboardCheck } from 'lucide-react';
+import { Info, Calendar,ClipboardCheck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 // Hooks
@@ -18,7 +18,7 @@ import {
 import { ValidationMessage } from './common/ValidationMessage';
 
 // Types
-import { FutureFormData } from './schemas/futureFormSchema';
+
 
 const FutureCreationForm: React.FC = () => {
   // Use our custom hooks
@@ -35,10 +35,7 @@ const FutureCreationForm: React.FC = () => {
     handleTickValueChange,
     handleContractMultiplierChange,
     handlePercentageMarginChange,
-    handleInitialMarginAmountChange,
     handleLotSizeChange,
-    handleDepositTypeChange,
-    handleUnderlyingTypeChange,
     setSubmitting,
     validateEntireForm,
   } = useFutureForm();
@@ -46,37 +43,41 @@ const FutureCreationForm: React.FC = () => {
   const navigation = useFormNavigation(form, errors);
   const api = useFutureAPI();
 
-  // Fetch underlying assets when underlying type changes
+  // Fetch underlying assets on component mount
   useEffect(() => {
-    if (form.underlyingType) {
-      // Show loading notification
-      const loadingToast = toast.loading('Chargement des actifs sous-jacents...', {
-        icon: '🔄',
-      });
-      
-      api.fetchUnderlyingAssets(form.underlyingType)
-        .then(() => {
-          toast.success('Actifs sous-jacents chargés avec succès', {
-            icon: '✅',
-            duration: 3000,
-          });
-        })
-        .catch((error) => {
-          toast.error('Erreur lors du chargement des actifs sous-jacents', {
-            icon: '❌',
-            duration: 5000,
-          });
-          console.error('Error fetching underlying assets:', error);
-        })
-        .finally(() => {
-          toast.dismiss(loadingToast);
+    // Show loading notification
+    const loadingToast = toast.loading('Chargement des actifs sous-jacents...', {
+      icon: '🔄',
+    });
+    
+    // Fetch all underlying assets (you might want to modify this to fetch by a default type)
+    api.fetchUnderlyingAssets('BONDS' as any)
+      .then(() => {
+        toast.success('Actifs sous-jacents chargés avec succès', {
+          icon: '✅',
+          duration: 3000,
         });
-    }
-  }, [form.underlyingType]); // ✅ Supprimé 'api' des dépendances pour éviter la boucle infinie
+      })
+      .catch((error) => {
+        toast.error('Erreur lors du chargement des actifs sous-jacents', {
+          icon: '❌',
+          duration: 5000,
+        });
+        console.error('Error fetching underlying assets:', error);
+      })
+      .finally(() => {
+        toast.dismiss(loadingToast);
+      });
+  }, [api.fetchUnderlyingAssets]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('Form submission started');
+    console.log('Form data:', form);
+    console.log('Navigation ready:', navigation.isFormReadyForSubmission());
+    console.log('Form valid:', validateEntireForm());
     
     if (!navigation.isFormReadyForSubmission()) {
       toast.error('Veuillez compléter toutes les étapes avant de soumettre', {
@@ -97,7 +98,9 @@ const FutureCreationForm: React.FC = () => {
     setSubmitting(true);
     
     try {
-      const result = await api.createFuture(form);
+      console.log('Sending payload:', { ...form, underlyingId: form.underlyingId, depositType: 'RATE' });
+      const result = await api.createFuture({ ...form, underlyingId: form.underlyingId, depositType: 'RATE' });
+      console.log('API response:', result);
       
       if (result.success) {
         toast.success('Future créé avec succès ! 🎉', {
@@ -106,14 +109,18 @@ const FutureCreationForm: React.FC = () => {
         });
         // Optionally reset form or redirect
       } else {
+        console.error('Backend error details:', result.error);
         toast.error(`Erreur lors de la création: ${result.error}`, {
-          icon: '',
+          icon: '❌',
           duration: 8000,
         });
       }
-    } catch (error) {
-      toast.error('Erreur réseau. Veuillez réessayer.', {
-        icon: '',
+    } catch (error: any) {
+      console.error('Error in form submission:', error);
+      console.error('Error details:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      toast.error(`Erreur réseau: ${error.response?.data?.message || error.message}`, {
+        icon: '❌',
         duration: 8000,
       });
     } finally {
@@ -264,14 +271,10 @@ const FutureCreationForm: React.FC = () => {
                   stringInputs={stringInputs}
                   api={{
                     depositTypes: api.depositTypes,
-                    underlyingTypes: api.underlyingTypes,
                     underlyingAssets: api.underlyingAssets,
                   }}
-                  onDepositTypeChange={handleDepositTypeChange}
                   onLotSizeChange={handleLotSizeChange}
                   onPercentageMarginChange={handlePercentageMarginChange}
-                  onInitialMarginAmountChange={handleInitialMarginAmountChange}
-                  onUnderlyingTypeChange={handleUnderlyingTypeChange}
                   onUnderlyingIdChange={(value) => updateField('underlyingId', value)}
                 />
               )}
@@ -308,9 +311,7 @@ const FutureCreationForm: React.FC = () => {
         {/* Title */}
         <div className="text-center mb-3">
           <h1 className="text-2xl font-bold text-gray-900">Créer un Future</h1>
-          <p className="mt-1 text-xs text-gray-600">
-            Remplissez les informations nécessaires pour créer un nouveau Future
-          </p>
+         
           
 
         </div>

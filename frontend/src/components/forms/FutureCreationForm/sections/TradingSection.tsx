@@ -1,7 +1,8 @@
 import React from 'react';
+
 import { FutureFormData } from '../schemas/futureFormSchema';
 import { FormField } from '../common/FormField';
-import { Info } from 'lucide-react';
+import { SettlementMethod } from '../../../../types/enums';
 
 interface TradingSectionProps {
   form: FutureFormData;
@@ -15,7 +16,7 @@ interface TradingSectionProps {
     contractMultiplier: number;
   };
   api: {
-    settlementMethods: string[];
+    settlementMethods: SettlementMethod[];
   };
   onTickSizeChange: (value: string) => void;
   onTickValueChange: (value: number) => void;
@@ -99,9 +100,6 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
                     Calculé automatiquement
                   </span>
                 )}
-                <div className="text-teal-600 cursor-help">
-                  <Info className="w-4 h-4" />
-                </div>
               </div>
               <input
                 type="number"
@@ -129,9 +127,6 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
                     Calculé automatiquement
                   </span>
                 )}
-                <div className="text-teal-600 cursor-help">
-                  <Info className="w-4 h-4" />
-                </div>
               </div>
               <input
                 type="number"
@@ -168,14 +163,14 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
 
         <FormField
           label="Date de dernière négociation"
-          name="lastTraadingDate"
+          name="lastTradingDate"
           required
-          error={errors.lastTraadingDate}
+          error={errors.lastTradingDate}
         >
           <input
             type="date"
-            value={form.lastTraadingDate}
-            onChange={(e) => onFieldChange('lastTraadingDate', e.target.value)}
+            value={form.lastTradingDate}
+            onChange={(e) => onFieldChange('lastTradingDate', e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
             required
           />
@@ -209,7 +204,9 @@ export const TradingSection: React.FC<TradingSectionProps> = ({
           >
             <option value="">Sélectionnez la méthode de règlement</option>
             {api.settlementMethods.map(method => (
-              <option key={method} value={method}>{method}</option>
+              <option key={method} value={method}>
+                {method}
+              </option>
             ))}
           </select>
         </FormField>

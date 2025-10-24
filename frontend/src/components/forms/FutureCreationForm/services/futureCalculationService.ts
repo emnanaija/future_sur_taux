@@ -18,22 +18,6 @@ export class FutureCalculationService {
   }
 
   /**
-   * Calculate initial margin amount based on lot size and percentage margin
-   */
-  static calculateInitialMarginAmount(lotSize: number, percentageMargin: number): number {
-    if (lotSize <= 0 || percentageMargin <= 0) return 0;
-    return lotSize * percentageMargin;
-  }
-
-  /**
-   * Calculate percentage margin based on lot size and initial margin amount
-   */
-  static calculatePercentageMargin(lotSize: number, initialMarginAmount: number): number {
-    if (lotSize <= 0) return 0;
-    return initialMarginAmount / lotSize;
-  }
-
-  /**
    * Parse tick size from string input
    */
   static parseTickSize(str: string): number {
@@ -52,15 +36,6 @@ export class FutureCalculationService {
   }
 
   /**
-   * Parse initial margin amount from string input
-   */
-  static parseInitialMarginAmount(str: string): number {
-    if (!str) return 0;
-    const val = parseFloat(str);
-    return isNaN(val) ? 0 : val;
-  }
-
-  /**
    * Update form with calculated values based on deposit type
    */
   static updateFormCalculations(
@@ -68,18 +43,10 @@ export class FutureCalculationService {
     depositType: string,
     lotSize: number
   ): PartialFutureFormData {
-    if (depositType === 'RATE') {
-      // For rate-based deposits, calculate initial margin from percentage
-      return {
-        initialMarginAmount: this.calculateInitialMarginAmount(lotSize, form.percentageMargin)
-      };
-    } else if (depositType === 'AMOUNT') {
-      // For amount-based deposits, calculate percentage from initial margin
-      return {
-        percentageMargin: this.calculatePercentageMargin(lotSize, form.initialMarginAmount)
-      };
-    }
-    return {};
+    // Remove any logic that allows choosing between percentage and amount
+    return {
+      percentageMargin: this.parsePercentageMargin(form.percentageMargin.toString())
+    };
   }
 
   /**

@@ -134,7 +134,13 @@ export const FormStepper: React.FC<FormStepperProps> = ({
         })}
       </div>
       
-
+      {/* Progress bar */}
+      <div className="relative h-1 bg-gray-200 rounded-full overflow-hidden">
+        <div
+          className="absolute h-full bg-teal-600 transition-all duration-300 ease-out"
+          style={{ width: `${((currentStep + 1) / sections.length) * 100}%` }}
+        />
+      </div>
       
       {/* Validation status indicator */}
       {getStepValidation && (

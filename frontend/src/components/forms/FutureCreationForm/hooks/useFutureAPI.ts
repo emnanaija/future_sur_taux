@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { SettlementMethod, DepositType, UnderlyingType } from '../../../../types/enums';
 
 // Types for API responses
 interface UnderlyingAsset {
@@ -8,9 +9,9 @@ interface UnderlyingAsset {
 }
 
 interface APIState {
-  settlementMethods: string[];
-  depositTypes: string[];
-  underlyingTypes: string[];
+  settlementMethods: SettlementMethod[];
+  depositTypes: DepositType[];
+  underlyingTypes: UnderlyingType[];
   underlyingAssets: UnderlyingAsset[];
   isLoading: boolean;
   error: string | null;
@@ -33,9 +34,9 @@ export const useFutureAPI = () => {
       
       try {
         const [settlementRes, depositRes, typeRes] = await Promise.all([
-          axios.get<string[]>('/api/enums/settlement-methods'),
-          axios.get<string[]>('/api/enums/deposit-types'),
-          axios.get<string[]>('/api/underlyings/types'),
+          axios.get<SettlementMethod[]>('/api/enums/settlement-methods'),
+          axios.get<DepositType[]>('/api/enums/deposit-types'),
+          axios.get<UnderlyingType[]>('/api/underlyings/types'),
         ]);
 
         setApiState(prev => ({
@@ -59,7 +60,7 @@ export const useFutureAPI = () => {
   }, []);
 
   // Fetch underlying assets based on type
-  const fetchUnderlyingAssets = async (underlyingType: string) => {
+  const fetchUnderlyingAssets = useCallback(async (underlyingType: UnderlyingType) => {
     if (!underlyingType) {
       setApiState(prev => ({ ...prev, underlyingAssets: [] }));
       return;
@@ -72,17 +73,31 @@ export const useFutureAPI = () => {
       setApiState(prev => ({ ...prev, underlyingAssets: [] }));
       console.error('Error fetching underlying assets:', error);
     }
-  };
+  }, []);
+
 
   // Create future
   const createFuture = async (futureData: any) => {
+    console.log('🚀 API: Starting future creation...');
+    console.log('📤 API: Sending data:', futureData);
+    console.log('🌐 API: URL:', '/api/futures');
+    
     setApiState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
+      console.log('📡 API: Making POST request...');
       const response = await axios.post('/api/futures', futureData);
+      console.log('✅ API: Response received:', response);
+      console.log('📊 API: Response data:', response.data);
+      
       setApiState(prev => ({ ...prev, isLoading: false }));
       return { success: true, data: response.data };
     } catch (error: any) {
+      console.error('❌ API: Error occurred:', error);
+      console.error('❌ API: Error response:', error.response);
+      console.error('❌ API: Error status:', error.response?.status);
+      console.error('❌ API: Error data:', error.response?.data);
+      
       const errorMessage = error.response?.data?.message || 'Erreur lors de la création du future';
       setApiState(prev => ({ ...prev, error: errorMessage, isLoading: false }));
       return { success: false, error: errorMessage };

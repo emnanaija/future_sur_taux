@@ -14,13 +14,12 @@ export const futureFormSchema = z.object({
   
   // Trading fields
   firstTradingDate: z.string().min(1, 'La date de première négociation est requise'),
-  lastTraadingDate: z.string().min(1, 'La date de dernière négociation est requise'),
+  lastTradingDate: z.string().min(1, 'La date de dernière négociation est requise'),
   tradingCurrency: z.string().min(1, 'La devise de négociation est requise'),
   settlementMethod: z.string().min(1, 'La méthode de règlement est requise'),
   instrumentStatus: z.boolean(),
   
   // Financial fields
-  initialMarginAmount: z.number().min(0, 'Le montant de marge initiale doit être positif'),
   percentageMargin: z.number().min(0, 'Le pourcentage de marge doit être positif'),
   lotSize: z.number().positive('La taille de lot doit être supérieure à 0'),
   contractMultiplier: z.number().min(0, 'Le multiplicateur de contrat doit être positif'),
@@ -28,20 +27,19 @@ export const futureFormSchema = z.object({
   tickValue: z.number().min(0, 'La valeur du tick doit être positive'),
   
   // Underlying fields
-  underlyingType: z.string().min(1, 'Le type de sous-jacent est requis'),
   underlyingId: z.number().positive('Le sous-jacent est requis'),
   depositType: z.string().min(1, 'Le type de dépôt est requis'),
 }).refine((data) => {
   // Validation personnalisée : date début < date fin
-  if (data.firstTradingDate && data.lastTraadingDate) {
+  if (data.firstTradingDate && data.lastTradingDate) {
     const startDate = new Date(data.firstTradingDate);
-    const endDate = new Date(data.lastTraadingDate);
+    const endDate = new Date(data.lastTradingDate);
     return startDate < endDate;
   }
   return true; // Si une des dates n'est pas encore saisie, on ne valide pas
 }, {
   message: "La date de début de négociation doit être antérieure à la date de fin de négociation",
-  path: ["lastTraadingDate"], // L'erreur sera affichée sur le champ date de fin
+  path: ["lastTradingDate"], // L'erreur sera affichée sur le champ date de fin
 });
 
 // Type inference from the schema
