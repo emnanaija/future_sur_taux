@@ -24,6 +24,8 @@ export interface FutureDisplay {
   underlyingId: number;
   underlyingIdentifier: string;
   underlyingType: string;
+  marketPrice: number | null;
+  evaluation: string;
 }
 
 // Types pour les enums
@@ -58,4 +60,19 @@ export const UNDERLYING_TYPE_LABELS = {
   [UnderlyingType.BONDS]: 'Obligations',
   [UnderlyingType.STOCKS]: 'Actions',
   [UnderlyingType.COMMODITIES]: 'Matières premières'
+};
+
+// Labels pour l'évaluation
+export const EVALUATION_LABELS = {
+  'SUREVALUE': 'Surévalué',
+  'SOUS-EVALUEE': 'Sous-évalué',
+  'EGAL': 'Égal',
+  'INCONNUE': 'Inconnue'
+};
+
+export const EVALUATION_COLORS = {
+  'SUREVALUE': 'text-red-600 bg-red-100',
+  'SOUS-EVALUEE': 'text-green-600 bg-green-100',
+  'EGAL': 'text-blue-600 bg-blue-100',
+  'INCONNUE': 'text-gray-600 bg-gray-100'
 };

@@ -52,6 +52,7 @@ export const useFutureList = () => {
     fetchFutures();
   }, [fetchFutures]);
 
+
   // Formater les montants pour l'affichage
   const formatCurrency = useCallback((amount: number, currency: string = 'EUR') => {
     return new Intl.NumberFormat('fr-FR', {

@@ -1,21 +1,22 @@
 package com.example.future_sur_taux.service;
 
-import com.example.future_sur_taux.domain.Bond;
 import com.example.future_sur_taux.domain.Future;
 import com.example.future_sur_taux.domain.Underlying;
 import com.example.future_sur_taux.domain.UnderlyingAsset;
-import com.example.future_sur_taux.domain.enumeration.UnderlyingType;
-import com.example.future_sur_taux.domain.enumeration.CollateralMethod;
+import com.example.future_sur_taux.domain.Bond;
 import com.example.future_sur_taux.dto.FutureCreationDTO;
 import com.example.future_sur_taux.dto.FutureDisplayDTO;
 import com.example.future_sur_taux.repository.FutureRepository;
 import com.example.future_sur_taux.repository.UnderlyingRepository;
+import com.example.future_sur_taux.domain.enumeration.DepositType;
+import com.example.future_sur_taux.domain.enumeration.CollateralMethod;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.stream.Collectors;
-import com.example.future_sur_taux.domain.enumeration.DepositType;
 
 @Service
 @RequiredArgsConstructor
@@ -25,13 +26,11 @@ public class FutureService {
     private final UnderlyingRepository underlyingRepository;
     private final FutureCalculationService calculationService;
 
+    @Autowired
+    private FinnhubService finnhubService;
+
     public Future createFutureFromDTO(FutureCreationDTO dto) {
-        try {
-            System.out.println("=== FUTURE SERVICE - Creating Future ===");
-            System.out.println("DTO: " + dto);
-            
-            // 🔹 Construire l'entité Future à partir du DTO
-            Future future = new Future();
+        Future future = new Future();
         future.setSymbol(dto.getSymbol());
         future.setDescription(dto.getDescription());
         future.setIsin(dto.getIsin());
@@ -50,75 +49,42 @@ public class FutureService {
         future.setPercentageMargin(dto.getPercentageMargin());
         future.setSettlementMethod(dto.getSettlementMethod());
         future.setDepositType(dto.getDepositType() != null ? dto.getDepositType() : DepositType.RATE);
-        future.setInstrumentStatus(dto.getInstrumentStatus());
-        
-        // Set default collateral method (required field)
+        future.setInstrumentStatus(dto.getInstrumentStatus() != null ? dto.getInstrumentStatus() : false);
         future.setCollateralMethod(CollateralMethod.CASHCOLLATERAL);
-        
-        // Set default values for required fields that might be null
-        if (future.getInstrumentStatus() == null) {
-            future.setInstrumentStatus(false);
-        }
-        if (future.getFlagForDelete() == null) {
-            future.setFlagForDelete(false);
-        }
 
-        System.out.println("Looking for underlying with ID: " + dto.getUnderlyingId());
         Underlying underlying = underlyingRepository.findById(dto.getUnderlyingId())
                 .orElseThrow(() -> new RuntimeException("Underlying not found with ID: " + dto.getUnderlyingId()));
-        System.out.println("Found underlying: " + underlying);
         future.setUnderlying(underlying);
 
-// Vérifier si c'est un UnderlyingAsset qui contient un Bond
+        // 🔹 Calculs si bond
         if (underlying instanceof UnderlyingAsset) {
-            UnderlyingAsset underlyingAsset = (UnderlyingAsset) underlying;
-            System.out.println("UnderlyingAsset: " + underlyingAsset);
-            System.out.println("Asset: " + underlyingAsset.getAsset());
-            
-            if (underlyingAsset.getAsset() != null && underlyingAsset.getAsset() instanceof Bond) {
-                Bond bond = (Bond) underlyingAsset.getAsset();
-                System.out.println("Bond found: " + bond);
-                try {
-                    calculationService.calculateAll(future, bond);
-                    System.out.println("Calculations completed successfully");
-                } catch (Exception e) {
-                    System.err.println("Error in calculations: " + e.getMessage());
-                    e.printStackTrace();
-                    // Continue without calculations rather than failing
-                }
-            } else {
-                System.out.println("No Bond asset found, skipping calculations");
+            UnderlyingAsset ua = (UnderlyingAsset) underlying;
+            if (ua.getAsset() instanceof Bond) {
+                Bond bond = (Bond) ua.getAsset();
+                try { calculationService.calculateAll(future, bond); }
+                catch (Exception e) { e.printStackTrace(); }
             }
-        } else {
-            System.out.println("Not an UnderlyingAsset, skipping calculations");
         }
 
-
-
-        // 🔹 Sauvegarder en base
-        System.out.println("Saving future to database...");
-        Future savedFuture = futureRepository.save(future);
-        System.out.println("Future saved successfully with ID: " + savedFuture.getId());
-        return savedFuture;
-        
-        } catch (Exception e) {
-            System.err.println("ERROR in FutureService.createFutureFromDTO: " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("Failed to create future: " + e.getMessage(), e);
-        }
+        return futureRepository.save(future);
     }
 
 
     public List<FutureDisplayDTO> getAllFuturesForDisplay() {
         List<Future> futures = futureRepository.findAll();
-        return futures.stream().map(this::toDTO).collect(Collectors.toList());
-    }
-    
-    public List<Underlying> getAllUnderlyings() {
-        return underlyingRepository.findAll();
+        String[] symbols = futures.stream().map(Future::getSymbol).distinct().toArray(String[]::new);
+
+        Map<String, BigDecimal> marketPrices = finnhubService.getMarketPrices(symbols);
+
+        return futures.stream()
+                .map(f -> toDTO(f, marketPrices.get(f.getSymbol())))
+                .collect(Collectors.toList());
     }
 
-    private FutureDisplayDTO toDTO(Future future) {
+
+
+
+    private FutureDisplayDTO toDTO(Future future, BigDecimal marketPrice) {
         FutureDisplayDTO dto = new FutureDisplayDTO();
         dto.setId(future.getId());
         dto.setSymbol(future.getSymbol());
@@ -146,6 +112,20 @@ public class FutureService {
             dto.setUnderlyingType(future.getUnderlying().getUnderlyingType().name());
         }
 
+        dto.setMarketPrice(marketPrice);
+
+        if (marketPrice != null && future.getTheoreticalPrice() != null) {
+            int cmp = marketPrice.compareTo(future.getTheoreticalPrice());
+            if (cmp > 0) dto.setEvaluation("SUREVALUE");
+            else if (cmp < 0) dto.setEvaluation("SOUS-EVALUEE");
+            else dto.setEvaluation("EGAL");
+        } else {
+            dto.setEvaluation("INCONNUE");
+        }
+
         return dto;
+    }
+    public List<Underlying> getAllUnderlyings() {
+        return underlyingRepository.findAll();
     }
 }

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   RefreshCw, 
-  Search, 
   Grid, 
   List, 
   TrendingUp,
@@ -18,7 +17,7 @@ import {
 import { toast } from 'react-hot-toast';
 
 import { useFutureList } from '../hooks/useFutureList';
-import { FutureDisplay, DEPOSIT_TYPE_LABELS, SETTLEMENT_METHOD_LABELS } from '../types/future';
+import { FutureDisplay, DEPOSIT_TYPE_LABELS, SETTLEMENT_METHOD_LABELS, EVALUATION_LABELS, EVALUATION_COLORS } from '../types/future';
 
 type ViewMode = 'grid' | 'list';
 type StatusFilter = 'all' | 'active' | 'upcoming' | 'expired' | 'matured';
@@ -176,7 +175,7 @@ const FutureCard: React.FC<FutureCardProps> = ({
             <DollarSign className="w-5 h-5 mr-2 text-teal-600 flex-shrink-0" />
             Calculs financiers
           </h4>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* Prix théorique */}
             <div className="bg-white rounded-lg p-4 shadow-sm border border-teal-100 min-w-0 overflow-hidden">
               <div className="flex items-center justify-between mb-2">
@@ -187,6 +186,20 @@ const FutureCard: React.FC<FutureCardProps> = ({
                 {formatCurrency(future.theoreticalPrice)}
               </p>
               <p className="text-xs text-gray-500 mt-1">Prix calculé du future</p>
+            </div>
+
+            {/* Prix de marché */}
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-green-100 min-w-0 overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">Prix de marché</span>
+                <BarChart3 className="w-4 h-4 text-green-600 flex-shrink-0" />
+              </div>
+              <p className="text-lg md:text-xl font-bold text-green-700 break-all" title={future.marketPrice ? formatCurrency(future.marketPrice) : 'Non disponible'}>
+                {future.marketPrice ? formatCurrency(future.marketPrice) : 'N/A'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {future.evaluation && future.evaluation !== 'INCONNUE' ? EVALUATION_LABELS[future.evaluation as keyof typeof EVALUATION_LABELS] : 'Prix non disponible'}
+              </p>
             </div>
 
             {/* Valeur du contrat */}
@@ -217,24 +230,43 @@ const FutureCard: React.FC<FutureCardProps> = ({
           </div>
         </div>
 
-        {/* Statut de l'instrument */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-          <span className="text-sm font-medium text-gray-700">Statut de l'instrument:</span>
-          <div className={`flex items-center space-x-2 px-3 py-1 rounded-full flex-shrink-0 ${
-            future.instrumentStatus 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-red-100 text-red-800'
-          }`}>
-            {future.instrumentStatus ? (
-              <CheckCircle className="w-4 h-4 flex-shrink-0" />
-            ) : (
-              <XCircle className="w-4 h-4 flex-shrink-0" />
-            )}
-            <span className="text-sm font-medium whitespace-nowrap">
-              {future.instrumentStatus ? 'Côté' : 'Non côté'}
-            </span>
+        {/* Évaluation et statut */}
+        <div className="space-y-4">
+          {/* Évaluation du prix */}
+          {future.evaluation && future.evaluation !== 'INCONNUE' && (
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-100">
+              <span className="text-sm font-medium text-gray-700">Évaluation du prix:</span>
+              <div className={`flex items-center space-x-2 px-3 py-1 rounded-full flex-shrink-0 ${EVALUATION_COLORS[future.evaluation as keyof typeof EVALUATION_COLORS]}`}>
+                {future.evaluation === 'SUREVALUE' && <TrendingUp className="w-4 h-4 flex-shrink-0" />}
+                {future.evaluation === 'SOUS-EVALUEE' && <TrendingUp className="w-4 h-4 flex-shrink-0 rotate-180" />}
+                {future.evaluation === 'EGAL' && <CheckCircle className="w-4 h-4 flex-shrink-0" />}
+                <span className="text-sm font-medium whitespace-nowrap">
+                  {EVALUATION_LABELS[future.evaluation as keyof typeof EVALUATION_LABELS]}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Statut de l'instrument */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <span className="text-sm font-medium text-gray-700">Statut de l'instrument:</span>
+            <div className={`flex items-center space-x-2 px-3 py-1 rounded-full flex-shrink-0 ${
+              future.instrumentStatus 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {future.instrumentStatus ? (
+                <CheckCircle className="w-4 h-4 flex-shrink-0" />
+              ) : (
+                <XCircle className="w-4 h-4 flex-shrink-0" />
+              )}
+              <span className="text-sm font-medium whitespace-nowrap">
+                {future.instrumentStatus ? 'Côté' : 'Non côté'}
+              </span>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   );
@@ -254,21 +286,16 @@ export const FutureList: React.FC = () => {
   } = useFutureList();
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortBy, setSortBy] = useState<'symbol' | 'maturityDate' | 'theoreticalPrice' | 'contractValue'>('symbol');
 
   // Filtrer et trier les futures
   const filteredAndSortedFutures = futures
     .filter(future => {
-      const matchesSearch = future.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           future.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           future.isin.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      if (statusFilter === 'all') return matchesSearch;
+      if (statusFilter === 'all') return true;
       
       const status = getFutureStatus(future);
-      return matchesSearch && status.status === statusFilter;
+      return status.status === statusFilter;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -294,6 +321,7 @@ export const FutureList: React.FC = () => {
     matured: futures.filter(f => getFutureStatus(f).status === 'matured').length
   };
 
+
   const handleRefresh = async () => {
     const loadingToast = toast.loading('Actualisation des données...', {
       icon: '🔄',
@@ -314,6 +342,7 @@ export const FutureList: React.FC = () => {
       toast.dismiss(loadingToast);
     }
   };
+
 
   if (error) {
     return (
@@ -405,64 +434,73 @@ export const FutureList: React.FC = () => {
               </div>
             </div>
           </div>
+
         </div>
 
         {/* Filtres et contrôles */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-6">
-            {/* Recherche */}
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Rechercher par symbole, nom ou ISIN..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-              </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 sm:space-x-6">
+            {/* Titre de la section */}
+            <div className="flex items-center space-x-3">
+              <h2 className="text-lg font-semibold text-gray-900">Filtres et tri</h2>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <span className="text-sm text-gray-500">
+                {filteredAndSortedFutures.length} future{filteredAndSortedFutures.length > 1 ? 's' : ''} affiché{filteredAndSortedFutures.length > 1 ? 's' : ''}
+              </span>
             </div>
 
             {/* Filtres */}
-            <div className="flex items-center space-x-4">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              >
-                <option value="all">Tous les statuts</option>
-                <option value="active">Actifs</option>
-                <option value="upcoming">À venir</option>
-                <option value="expired">Expirés</option>
-                <option value="matured">Échus</option>
-              </select>
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-6">
+              {/* Filtre par statut */}
+              <div className="flex flex-col space-y-1">
+                <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Statut</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                >
+                  <option value="all">Tous les statuts</option>
+                  <option value="active">Actifs</option>
+                  <option value="upcoming">À venir</option>
+                  <option value="expired">Expirés</option>
+                  <option value="matured">Échus</option>
+                </select>
+              </div>
 
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              >
-                <option value="symbol">Trier par symbole</option>
-                <option value="maturityDate">Trier par échéance</option>
-                <option value="theoreticalPrice">Trier par prix théorique</option>
-                <option value="contractValue">Trier par valeur contrat</option>
-              </select>
+              {/* Tri */}
+              <div className="flex flex-col space-y-1">
+                <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Trier par</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                >
+                  <option value="symbol">Symbole</option>
+                  <option value="maturityDate">Échéance</option>
+                  <option value="theoreticalPrice">Prix théorique</option>
+                  <option value="contractValue">Valeur contrat</option>
+                </select>
+              </div>
 
               {/* Mode d'affichage */}
-              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 ${viewMode === 'grid' ? 'bg-teal-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <Grid className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 ${viewMode === 'list' ? 'bg-teal-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <List className="w-4 h-4" />
-                </button>
+              <div className="flex flex-col space-y-1">
+                <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Affichage</label>
+                <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 ${viewMode === 'grid' ? 'bg-teal-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                    title="Vue grille"
+                  >
+                    <Grid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 ${viewMode === 'list' ? 'bg-teal-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                    title="Vue liste"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -481,8 +519,8 @@ export const FutureList: React.FC = () => {
             <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Aucun future trouvé</h3>
             <p className="text-gray-600">
-              {searchTerm || statusFilter !== 'all' 
-                ? 'Aucun future ne correspond à vos critères de recherche.'
+              {statusFilter !== 'all' 
+                ? 'Aucun future ne correspond à vos critères de filtrage.'
                 : 'Aucun future n\'a encore été créé.'}
             </p>
           </div>

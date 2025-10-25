@@ -37,4 +37,9 @@ public class FutureDisplayDTO {
     private Long underlyingId;
     private String underlyingIdentifier;
     private String underlyingType;
+
+    private BigDecimal marketPrice;
+
+    // ✅ Evaluation : SUREVALUE / SOUS-EVALUEE / EGAL / INCONNUE
+    private String evaluation;
 }
